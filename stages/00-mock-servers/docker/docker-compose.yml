@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  # Configuration volume
+  config:
+    image: alpine:latest
+    volumes:
+      - ./config:/app/config:ro
+    command: ["tail", "-f", "/dev/null"]
+
+  # Transaction Service
+  transaction-service:
+    build:
+      context: ../services/transaction-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./config:/app/config:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    depends_on:
+      - config
+    restart: unless-stopped
+    networks:
+      - banking-network
+
+  # Authentication Service
+  auth-service:
+    build:
+      context: ../services/auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    volumes:
+      - ./config:/app/config:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    depends_on:
+      - config
+    restart: unless-stopped
+    networks:
+      - banking-network
+
+  # Monitoring Service
+  monitoring-service:
+    build:
+      context: ../services/monitoring-service
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    volumes:
+      - ./config:/app/config:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    depends_on:
+      - config
+    restart: unless-stopped
+    networks:
+      - banking-network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ../services/api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config:/app/config:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    depends_on:
+      - transaction-service
+      - auth-service
+      - monitoring-service
+      - config
+    restart: unless-stopped
+    networks:
+      - banking-network
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - banking-network
+    command: redis-server --appendonly yes
+
+  # Grafana for monitoring dashboard (optional)
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - banking-network
+
+networks:
+  banking-network:
+    driver: bridge
+
+volumes:
+  config-data:
