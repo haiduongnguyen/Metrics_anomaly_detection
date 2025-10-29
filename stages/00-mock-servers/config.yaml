@@ -1,0 +1,338 @@
+# Mock Log Server Configuration for Banking Anomaly Detection
+# Global anomaly rate: 8% of total logs will be anomalies
+global_anomaly_rate: 0.08
+
+# Log generation settings
+log_generation:
+  logs_per_second: 10
+  burst_simulation: true
+  burst_frequency_seconds: 300  # Every 5 minutes
+  burst_duration_seconds: 30    # Burst lasts 30 seconds
+  burst_multiplier: 3.0         # 3x normal rate during burst
+
+# Service sources for log generation
+service_sources:
+  - api-gateway
+  - transaction-service
+  - auth-service
+  - fraud-detection-service
+  - monitoring-agent
+  - kafka-connector
+  - postgres-db
+  - audit-trail
+  - user-management-service
+  - payment-gateway
+  - notification-service
+
+# Log levels distribution
+log_levels:
+  DEBUG: 0.15
+  INFO: 0.60
+  WARN: 0.15
+  ERROR: 0.08
+  CRITICAL: 0.02
+
+# Anomaly scenarios mapped to comprehensive anomaly list
+anomaly_scenarios:
+  # Suspicious Transactions (High Frequency)
+  - id: "BANK-001"
+    name: "Login Failure Spike (#61)"
+    type: "Suspicious Transaction"
+    category: "security_authentication"
+    enabled: true
+    frequency_weight: 40
+    severity: "High"
+    log_level: "WARN"
+    source_services: ["auth-service", "api-gateway"]
+    intensity:
+      min_attempts: 5
+      max_attempts: 15
+      time_window_minutes: 5
+    correlation_chain: ["account-lock", "security-alert"]
+    
+  - id: "BANK-002"
+    name: "Brute Force Attack (#87)"
+    type: "Suspicious Transaction"
+    category: "security_attack"
+    enabled: true
+    frequency_weight: 35
+    severity: "Critical"
+    log_level: "ERROR"
+    source_services: ["auth-service", "api-gateway", "fraud-detection-service"]
+    intensity:
+      attempts_per_minute: 50
+      unique_ips: 10
+      duration_minutes: 3
+    correlation_chain: ["ip-block", "security-escalation"]
+    
+  - id: "BANK-003"
+    name: "Transaction Amount Anomaly (#66)"
+    type: "Suspicious Transaction"
+    category: "business_fraud"
+    enabled: true
+    frequency_weight: 30
+    severity: "High"
+    log_level: "WARN"
+    source_services: ["transaction-service", "fraud-detection-service"]
+    intensity:
+      amount_multiplier: 10.0  # 10x normal transaction
+      normal_amount_range: [100, 5000]
+    correlation_chain: ["manual-review", "aml-flag"]
+    
+  - id: "BANK-004"
+    name: "Credential Stuffing (#88)"
+    type: "Suspicious Transaction"
+    category: "security_attack"
+    enabled: true
+    frequency_weight: 25
+    severity: "High"
+    log_level: "ERROR"
+    source_services: ["auth-service", "api-gateway"]
+    intensity:
+      success_rate: 0.02  # 2% success rate
+      total_attempts: 1000
+    correlation_chain: ["password-reset", "account-compromise"]
+
+  # Abnormal User Activity (Medium Frequency)
+  - id: "BANK-005"
+    name: "Geographic Traffic Anomaly (#53)"
+    type: "Abnormal User Activity"
+    category: "behavioral_location"
+    enabled: true
+    frequency_weight: 25
+    severity: "Medium"
+    log_level: "INFO"
+    source_services: ["auth-service", "user-management-service"]
+    intensity:
+      unusual_countries: ["RU", "CN", "IR", "KP", "SY"]
+      normal_countries: ["US", "VN", "SG", "JP", "GB"]
+    correlation_chain: ["travel-verification", "security-question"]
+    
+  - id: "BANK-006"
+    name: "PII Access Anomaly (#106)"
+    type: "Abnormal User Activity"
+    category: "security_data_access"
+    enabled: true
+    frequency_weight: 20
+    severity: "High"
+    log_level: "WARN"
+    source_services: ["user-management-service", "audit-trail"]
+    intensity:
+      accounts_accessed: 50
+      time_window_minutes: 10
+    correlation_chain: ["privacy-alert", "access-revoked"]
+    
+  - id: "BANK-007"
+    name: "Session Hijacking (#90)"
+    type: "Abnormal User Activity"
+    category: "security_session"
+    enabled: true
+    frequency_weight: 15
+    severity: "Critical"
+    log_level: "ERROR"
+    source_services: ["auth-service", "api-gateway"]
+    intensity:
+      concurrent_sessions: 3
+      geographic_distance_km: 1000
+    correlation_chain: ["session-termination", "forced-logout"]
+    
+  - id: "BANK-008"
+    name: "VPN Anomalies (#133)"
+    type: "Abnormal User Activity"
+    category: "security_network"
+    enabled: true
+    frequency_weight: 10
+    severity: "Medium"
+    log_level: "INFO"
+    source_services: ["auth-service", "api-gateway"]
+    intensity:
+      suspicious_vpn_countries: ["RU", "CN", "IR"]
+      connection_frequency: 10
+    correlation_chain: ["vpn-verification", "additional-auth"]
+
+  # Minor System Errors (Medium Frequency)
+  - id: "BANK-009"
+    name: "Request Timeout Spike (#22)"
+    type: "Minor System Error"
+    category: "technical_performance"
+    enabled: true
+    frequency_weight: 15
+    severity: "Medium"
+    log_level: "WARN"
+    source_services: ["api-gateway", "transaction-service"]
+    intensity:
+      timeout_rate: 0.15  # 15% timeout rate
+      normal_timeout_rate: 0.01
+      duration_minutes: 5
+    correlation_chain: ["service-degradation", "user-complaints"]
+    
+  - id: "BANK-010"
+    name: "Database Connection Errors (#31)"
+    type: "Minor System Error"
+    category: "technical_database"
+    enabled: true
+    frequency_weight: 15
+    severity: "High"
+    log_level: "ERROR"
+    source_services: ["postgres-db", "transaction-service", "auth-service"]
+    intensity:
+      error_rate: 0.10  # 10% connection error rate
+      max_connections: 100
+      active_connections: 95
+    correlation_chain: ["connection-pool-exhaustion", "service-unavailable"]
+    
+  - id: "BANK-011"
+    name: "Cache Hit Rate Degradation (#33)"
+    type: "Minor System Error"
+    category: "technical_cache"
+    enabled: true
+    frequency_weight: 10
+    severity: "Medium"
+    log_level: "WARN"
+    source_services: ["monitoring-agent", "api-gateway"]
+    intensity:
+      cache_hit_rate: 0.60  # 60% hit rate (normally 95%+)
+      duration_minutes: 10
+    correlation_chain: ["increased-db-load", "response-time-degradation"]
+    
+  - id: "BANK-012"
+    name: "Database Replication Lag (#40)"
+    type: "Minor System Error"
+    category: "technical_database"
+    enabled: true
+    frequency_weight: 8
+    severity: "Medium"
+    log_level: "INFO"
+    source_services: ["postgres-db", "monitoring-agent"]
+    intensity:
+      lag_seconds: 30
+      normal_lag_seconds: 1
+    correlation_chain: ["read-consistency-issues", "stale-data-alert"]
+
+  # Severe Anomalies (Low Frequency)
+  - id: "BANK-013"
+    name: "DDoS Attack (#81)"
+    type: "Severe Anomaly"
+    category: "security_attack"
+    enabled: true
+    frequency_weight: 5
+    severity: "Critical"
+    log_level: "CRITICAL"
+    source_services: ["api-gateway", "fraud-detection-service"]
+    intensity:
+      requests_per_second: 10000
+      normal_rps: 100
+      attack_duration_minutes: 15
+      source_ip_count: 1000
+    correlation_chain: ["rate-limiting", "cdn-activation", "law-enforcement"]
+    
+  - id: "BANK-014"
+    name: "SQL Injection Attempts (#94)"
+    type: "Severe Anomaly"
+    category: "security_attack"
+    enabled: true
+    frequency_weight: 5
+    severity: "Critical"
+    log_level: "ERROR"
+    source_services: ["api-gateway", "postgres-db", "fraud-detection-service"]
+    intensity:
+      payloads: ["' OR 1=1 --", "'; DROP TABLE users; --", "' UNION SELECT * FROM passwords --"]
+      attempts_per_minute: 20
+    correlation_chain: ["waf-blocking", "security-incident", "forensics"]
+    
+  - id: "BANK-015"
+    name: "Data Exfiltration (#104)"
+    type: "Severe Anomaly"
+    category: "security_data_breach"
+    enabled: true
+    frequency_weight: 3
+    severity: "Critical"
+    log_level: "CRITICAL"
+    source_services: ["user-management-service", "audit-trail", "postgres-db"]
+    intensity:
+      records_exported: 10000
+      time_window_minutes: 30
+      unusual_file_size: true
+    correlation_chain: ["data-breach-alert", "legal-notification", "user-notification"]
+    
+  - id: "BANK-016"
+    name: "Ransomware Activity (#110)"
+    type: "Severe Anomaly"
+    category: "security_malware"
+    enabled: true
+    frequency_weight: 2
+    severity: "Critical"
+    log_level: "CRITICAL"
+    source_services: ["postgres-db", "audit-trail", "monitoring-agent"]
+    intensity:
+      encrypted_files: 1000
+      ransom_note_detected: true
+      backup_corruption: true
+    correlation_chain: ["incident-response", "system-isolation", "recovery-mode"]
+
+# Normal log templates for realistic background traffic
+normal_log_templates:
+  - template: "User {user_id} logged in successfully from {ip_address}"
+    level: "INFO"
+    services: ["auth-service"]
+    
+  - template: "Transaction {transaction_id} processed successfully for amount ${amount}"
+    level: "INFO"
+    services: ["transaction-service"]
+    
+  - template: "API request to {endpoint} completed in {response_time}ms"
+    level: "DEBUG"
+    services: ["api-gateway"]
+    
+  - template: "Database query executed in {query_time}ms"
+    level: "DEBUG"
+    services: ["postgres-db"]
+    
+  - template: "Cache hit for key {cache_key}"
+    level: "DEBUG"
+    services: ["monitoring-agent"]
+    
+  - template: "User session {session_id} validated"
+    level: "INFO"
+    services: ["auth-service"]
+    
+  - template: "Payment processed for order {order_id}"
+    level: "INFO"
+    services: ["payment-gateway"]
+    
+  - template: "Notification sent to user {user_id} via {channel}"
+    level: "INFO"
+    services: ["notification-service"]
+    
+  - template: "Health check passed for {service_name}"
+    level: "DEBUG"
+    services: ["monitoring-agent"]
+    
+  - template: "Audit log entry created for action {action}"
+    level: "INFO"
+    services: ["audit-trail"]
+
+# Geographic distribution for realistic IP addresses
+geographic_distribution:
+  countries:
+    - code: "US"
+      name: "United States"
+      weight: 0.35
+    - code: "VN" 
+      name: "Vietnam"
+      weight: 0.25
+    - code: "SG"
+      name: "Singapore"
+      weight: 0.15
+    - code: "JP"
+      name: "Japan"
+      weight: 0.10
+    - code: "GB"
+      name: "United Kingdom"
+      weight: 0.08
+    - code: "DE"
+      name: "Germany"
+      weight: 0.04
+    - code: "FR"
+      name: "France"
+      weight: 0.03
