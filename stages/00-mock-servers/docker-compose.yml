@@ -1,14 +1,17 @@
 services:
-  banking-mock-server:
-    build: .
-    container_name: banking-mock-server
+  scenario-orchestrator:
+    build: ./01-scenario-orchestrator
+    container_name: scenario-orchestrator
     ports:
       - "8000:8000"
     environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONDONTWRITEBYTECODE=1
-    volumes:
-      - ./config.yaml:/app/config.yaml:ro
+      - PATTERN_GENERATOR_URL=http://pattern-generator:8001
+      - STATE_MANAGER_URL=http://state-manager:8003
+      - LOG_SYNTHESIS_URL=http://log-synthesis:8002
+      - INGESTION_URL=http://ingestion-interface:8004
+      - LOG_LEVEL=INFO
+    networks:
+      - anomaly-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -16,3 +19,91 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    depends_on:
+      pattern-generator:
+        condition: service_healthy
+      state-manager:
+        condition: service_healthy
+
+  pattern-generator:
+    build: ./02-pattern-generator
+    container_name: pattern-generator
+    ports:
+      - "8001:8001"
+    environment:
+      - LOG_LEVEL=INFO
+      - MAX_PATTERNS_PER_REQUEST=1000
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  log-synthesis:
+    build: ./03-log-synthesis
+    container_name: log-synthesis
+    ports:
+      - "8002:8002"
+    environment:
+      - LOG_LEVEL=INFO
+      - MAX_LOGS_PER_REQUEST=10000
+      - INGESTION_URL=http://ingestion-interface:8004
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  state-manager:
+    build: ./04-state-manager
+    container_name: state-manager
+    ports:
+      - "8003:8003"
+    environment:
+      - LOG_LEVEL=INFO
+      - MAX_ENTITIES=100000
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  ingestion-interface:
+    build: ./05-ingestion-interface
+    container_name: ingestion-interface
+    ports:
+      - "8004:8004"
+    environment:
+      - LOG_LEVEL=INFO
+      - DEFAULT_RATE_LIMIT=1000
+      - MAX_BATCH_SIZE=1000
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      log-synthesis:
+        condition: service_healthy
+
+networks:
+  anomaly-network:
+    driver: bridge
