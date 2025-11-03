@@ -1,870 +1,331 @@
-# Hệ Thống Mô Phỏng Log Bất Thường Ngân Hàng
+# README.md - Hệ Thống Mô Phỏng Log Bất Thường Ngân Hàng
 
-Hệ thống microservices tự động tạo **59 loại log toàn diện** với khả năng mô phỏng **20 kịch bản sự cố hạ tầng** thực tế, phục vụ cho việc kiểm thử và huấn luyện các hệ thống phát hiện bất thường.
+## Giới Thiệu và Tổng Quan Nghiệp Vụ
 
-## 🎯 Hệ Thống Làm Gì?
+Hệ thống **Banking Anomaly Log Simulation System** là một giải pháp toàn diện để mô phỏng và tạo ra các log bất thường trong môi trường ngân hàng. Dự án này được thiết kế để hỗ trợ việc phát triển, thử nghiệm và đánh giá các hệ thống phát hiện bất thường (anomaly detection) trong lĩnh vực tài chính ngân hàng.
 
-Hệ thống này mô phỏng một hệ thống ngân hàng thật đang hoạt động với khả năng:
+### Mục Đích Cốt Lõi
+- **Mô phỏng thực tế**: Tạo ra các log giống như môi trường production với 59 loại log khác nhau
+- **Phát hiện bất thường**: Hỗ trợ training và testing các mô hình ML/AI phát hiện gian lận
+- **Kiểm thử hệ thống**: Đánh giá khả năng xử lý và phản ứng của hệ thống monitoring
+- **Tuân thủ quy định**: Mô phỏng các tình huống liên quan đến compliance và audit
 
-- ✅ **Tạo log liên tục tự động** (mặc định: 100 log/giây)
-- ✅ **Tự động chèn bất thường** với tần suất thấp (mặc định: 1/5,000 log = 0.02%)
-- ✅ **Ghi log vào file** theo 12 danh mục chuyên biệt
-- ✅ **Hỗ trợ 59 loại log** từ Infrastructure đến Business Intelligence
-- ✅ **UI trực quan** để tạo sự cố thủ công
-- ✅ **20 kịch bản sự cố** hạ tầng được định nghĩa sẵn
-- ✅ **Chạy 24/7** không cần can thiệp
+### Vấn Đề Giải Quyết
+- Thiếu dữ liệu thực tế để test hệ thống phát hiện bất thường
+- Khó khăn trong việc tạo ra các kịch bản anomaly phức tạp
+- Cần môi trường an toàn để thử nghiệm các tình huống rủi ro cao
+- Yêu cầu về việc chuẩn hóa log theo OpenTelemetry
 
-## 🎨 Giao Diện Tạo Sự Cố Thủ Công
+### Lợi Ích Tiềm Năng
+- **Giảm rủi ro**: Phát hiện sớm các mối đe dọa bảo mật và gian lận
+- **Tối ưu chi phí**: Tiết kiệm chi phí so với việc mua dữ liệu thực
+- **Nâng cao chất lượng**: Cải thiện độ chính xác của hệ thống monitoring
+- **Đào tạo hiệu quả**: Cung cấp môi trường thực hành cho đội ngũ SOC/DevOps
 
-Hệ thống cung cấp giao diện web trực quan tại **http://localhost:8000** để bạn có thể:
+## Tính Năng Chính
 
-### Tính Năng UI
+### 1. Scenario Orchestrator (Port 8000)
+- **Quản lý 200+ kịch bản bất thường**: Bao gồm 20 kịch bản infrastructure chuyên sâu với metrics chi tiết
+- **Tạo log liên tục tự động**: Tỷ lệ anomaly thực tế 0.02% (1/5000 logs)
+- **Trigger thủ công**: Tạo sự cố CPU spike, memory leak, database slow, network latency
+- **Web UI trực quan**: Giao diện tiếng Việt thân thiện với dashboard monitoring real-time
 
-1. **8 Nút Preset Sự Cố Nhanh:**
-   - 🔥 CPU Spike (Tăng đột biến CPU)
-   - 💾 Memory Leak (Rò rỉ bộ nhớ)
-   - 🌐 Network Latency (Trễ mạng)
-   - 💿 Disk I/O Issue (Vấn đề đọc/ghi đĩa)
-   - 🔒 Security Breach (Vi phạm bảo mật)
-   - 💳 Payment Failure (Lỗi thanh toán)
-   - 🗄️ Database Slow (Database chậm)
-   - 🔗 API Timeout (API timeout)
+### 2. Pattern Generator (Port 8001)
+- **5 pattern toán học**: Gaussian spike, Step function, Sawtooth, Exponential decay, Poisson events
+- **Data generator thực tế**: Tạo tên, số điện thoại, IP, số tài khoản theo chuẩn Việt Nam
+- **Banking-specific data**: Mô phỏng transaction amounts, merchant names, bank codes chính xác
 
-2. **Form Tùy Chỉnh Chi Tiết:**
-   - Chọn loại log cụ thể (59 loại)
-   - Điều chỉnh mức độ nghiêm trọng (0-100)
-   - Thiết lập thời gian kéo dài (giây)
-   - Số lượng log tạo ra
+### 3. Log Synthesis Engine (Port 8002)
+- **59 loại log toàn diện** được tổ chức trong 13 danh mục:
+  - Infrastructure & System (9 types)
+  - Application Layer (6 types)
+  - Database & Data Store (8 types)
+  - Security & Authentication (7 types)
+  - Business Transaction (5 types)
+  - Fraud Detection & AML (3 types)
+  - User Behavior & Analytics (6 types)
+  - Compliance & Audit (3 types)
+  - External Integration (3 types)
+  - Monitoring & Observability (3 types)
+  - Business Intelligence (2 types)
+  - Specialized Logs (2 types)
+  - Log Management (2 types)
+- **Auto-forwarding**: Tự động chuyển tiếp logs đến Ingestion Interface
 
-3. **Thống Kê Real-time:**
-   - Tổng số log đã tạo
-   - Số lượng anomaly
-   - Tỷ lệ anomaly
-   - Thời gian chạy
+### 4. State Manager (Port 8003)
+- **Quản lý lifecycle entities**: User, Account, Session, System states
+- **State transitions**: Kiểm soát chuyển đổi trạng thái hợp lệ
+- **History tracking**: Lưu lịch sử thay đổi trạng thái chi tiết
 
-### Cách Sử Dụng UI
+### 5. Ingestion Interface (Port 8004)
+- **Rate limiting**: Kiểm soát tốc độ ingestion (default 1000 logs/s)
+- **Multi-target support**: Kafka, HTTP, File System, Database
+- **Auto-categorization**: Tự động phân loại và lưu logs vào 13 thư mục category
+- **Anomaly detection**: Logs với anomaly_score > 70 được tách riêng vào thư mục anomaly
 
-\`\`\`bash
-# 1. Mở trình duyệt và truy cập
-http://localhost:8000
+### 6. Log Consolidation (Port 8005) - 🔄 **Tối ưu cho 2GB RAM**
+- **OpenTelemetry standardization**: Chuẩn hóa tất cả logs theo LogRecord format
+- **Dual storage mode**: File storage (mặc định) + RAM storage (tùy chọn)
+- **Memory optimization**: **RAM storage tắt mặc định** để tiết kiệm tài nguyên
+- **File persistence**: Logs chuẩn hóa lưu vĩnh viễn vào `/app/logs/consolidated/YYYYMMDD.jsonl`
+- **Severity mapping**: Tự động xác định severity dựa trên nội dung và anomaly score
+- **Aggregation analytics**: Thống kê timeline, source distribution, error patterns
+- **Trace correlation**: Hỗ trợ trace_id, span_id cho distributed tracing
 
-# 2. Nhấn một trong 8 nút preset để tạo sự cố nhanh
-# Hoặc
+## Các Kết Nối, Kiến Trúc và Dependency
 
-# 3. Điền form tùy chỉnh:
-#    - Log Type: Chọn từ dropdown (59 loại)
-#    - Severity: 0-100 (càng cao càng nghiêm trọng)
-#    - Duration: Thời gian kéo dài (giây)
-#    - Count: Số lượng log
+### Kiến Trúc Hệ Thống
 
-# 4. Nhấn "Trigger Custom Anomaly"
+```mermaid
+graph TB
+    subgraph "User Interface"
+        UI[Web Browser]
+    end
+    
+    subgraph "Core Services"
+        SO[Scenario Orchestrator<br/>:8000]
+        PG[Pattern Generator<br/>:8001]
+        LS[Log Synthesis<br/>:8002]
+        SM[State Manager<br/>:8003]
+        II[Ingestion Interface<br/>:8004]
+        LC[Log Consolidation<br/>:8005]
+    end
+    
+    subgraph "Data Flow"
+        SO -->|Generate Patterns| PG
+        SO -->|Request Logs| LS
+        SO -->|Update States| SM
+        LS -->|Forward Logs| II
+        II -->|Consolidate| LC
+        II -->|Write Files| FS[(File System<br/>/app/logs)]
+    end
+    
+    UI -->|HTTP| SO
+    UI -->|Monitor| LC
+```
 
-# 5. Xem log được tạo real-time trong thư mục logs/
-\`\`\`
+### Dependencies
+- **Python 3.11**: Runtime chính cho tất cả services
+- **FastAPI 0.104.1**: Framework web async hiệu năng cao
+- **Uvicorn 0.24.0**: ASGI server cho FastAPI
+- **Pydantic 2.5.0**: Data validation và serialization
+- **httpx 0.25.2**: Async HTTP client cho inter-service communication
+- **Docker & Docker Compose**: Container orchestration
 
-## 📋 59 Loại Log Được Hỗ Trợ
+### Network Architecture
+- **Bridge Network**: `anomaly-network` kết nối tất cả services
+- **Health Checks**: Mỗi service có endpoint `/health` với monitoring tự động
+- **Service Discovery**: Services giao tiếp qua container names (DNS internal)
 
-### I. Infrastructure & System Logs (9 loại)
+## Hướng Dẫn Cài Đặt và Triển Khai
 
-1. **server_log** - Log máy chủ (CPU, RAM, Disk)
-2. **container_log** - Log Docker/Kubernetes containers
-3. **network_log** - Log mạng (latency, packet loss, bandwidth)
-4. **storage_log** - Log lưu trữ (IOPS, throughput, capacity)
-5. **cdn_log** - Log CDN (cache hit/miss, response time)
-6. **dns_log** - Log DNS queries và responses
-7. **load_balancer_log** - Log cân bằng tải
-8. **firewall_log** - Log tường lửa (allow/deny rules)
-9. **vpn_log** - Log VPN connections
+### Yêu Cầu Hệ Thống
+- **Docker**: Version 20.10 trở lên
+- **Docker Compose**: Version 2.0 trở lên
+- **RAM**: **Tối thiểu 2GB** (nhờ mode file storage mới) - (khuyến nghị 4GB để bật RAM storage)
+- **Disk**: 10GB trống cho logs và Docker images
+- **CPU**: 2 cores trở lên
 
-### II. Application Layer Logs (6 loại)
+### Cài Đặt Từng Bước
 
-10. **application_log** - Log ứng dụng chung
-11. **api_log** - Log API requests/responses
-12. **microservice_log** - Log microservices
-13. **middleware_log** - Log middleware (message queue, cache)
-14. **cache_log** - Log Redis/Memcached
-15. **message_queue_log** - Log Kafka/RabbitMQ
+1. **Clone repository**:
+```bash
+git clone <repository-url>
+cd 00-mock-servers
+```
 
-### III. Database & Data Store Logs (8 loại)
+2. **Cấp quyền cho scripts**:
+```bash
+chmod +x start.sh stop.sh
+```
 
-16. **database_log** - Log database chung
-17. **sql_query_log** - Log SQL queries
-18. **nosql_log** - Log MongoDB/Cassandra
-19. **redis_log** - Log Redis operations
-20. **elasticsearch_log** - Log Elasticsearch
-21. **database_replication_log** - Log database replication
-22. **database_backup_log** - Log backup/restore
-23. **slow_query_log** - Log slow queries
+3. **Khởi động hệ thống**:
+```bash
+./start.sh
+```
 
-### IV. Security & Authentication Logs (7 loại)
+4. **Kiểm tra trạng thái**:
+```bash
+docker-compose ps
+docker-compose logs -f
+```
 
-24. **security_log** - Log bảo mật chung
-25. **authentication_log** - Log đăng nhập/đăng xuất
-26. **authorization_log** - Log phân quyền
-27. **waf_log** - Log Web Application Firewall
-28. **ids_ips_log** - Log Intrusion Detection/Prevention
-29. **dlp_log** - Log Data Loss Prevention
-30. **encryption_log** - Log mã hóa/giải mã
+### Triển Khai Production
 
-### V. Business Transaction Logs (5 loại)
+1. **Cấu hình environment variables**:
+```yaml
+# docker-compose.override.yml
+services:
+  scenario-orchestrator:
+    environment:
+      - LOG_LEVEL=WARNING
+      - MAX_SCENARIOS=500
+```
 
-31. **transaction_log** - Log giao dịch chung
-32. **payment_log** - Log thanh toán
-33. **transfer_log** - Log chuyển tiền
-34. **settlement_log** - Log đối soát
-35. **clearing_log** - Log thanh toán bù trừ
+2. **Tăng resource limits**:
+```yaml
+services:
+  log-synthesis:
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+```
 
-### VI. Fraud Detection & AML Logs (3 loại)
+3. **Persistent volumes**:
+```yaml
+volumes:
+  log-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/logs
+```
 
-36. **fraud_detection_log** - Log phát hiện gian lận
-37. **aml_log** - Log chống rửa tiền (AML)
-38. **kyc_log** - Log xác thực khách hàng (KYC)
+### Xử Lý Lỗi Tiềm Năng
 
-### VII. User Behavior & Analytics Logs (6 loại)
+- **Docker not running**: Khởi động Docker Desktop/Engine
+- **Port conflicts**: Kiểm tra ports 8000-8005 chưa được sử dụng
+- **Memory issues (2GB systems)**: 
+  - ✅ Sử dụng file storage mode (mặc định)
+  - ⚠️ Tắt RAM storage trong log-consolidation
+  - 📝 Giảm container memory limits xuống 512M-1G
+- **Network errors**: Đảm bảo không có firewall blocking
 
-39. **user_activity_log** - Log hoạt động người dùng
-40. **session_log** - Log phiên làm việc
-41. **clickstream_log** - Log click chuột
-42. **navigation_log** - Log điều hướng
-43. **search_log** - Log tìm kiếm
-44. **conversion_log** - Log chuyển đổi
+### 💡 Tips cho 2GB RAM Systems
 
-### VIII. Compliance & Audit Logs (3 loại)
+```bash
+# Kiểm tra memory usage
+docker stats --no-stream
 
-45. **audit_log** - Log kiểm toán
-46. **regulatory_log** - Log tuân thủ quy định
-47. **gdpr_log** - Log GDPR compliance
+# Cấu hình cho 2GB RAM
+cat > docker-compose.override.yml << EOF
+services:
+  log-consolidation:
+    environment:
+      - ENABLE_RAM_STORAGE=false
+      - ENABLE_FILE_STORAGE=true
+      - MAX_RAM_LOGS=1000
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+EOF
+```
 
-### IX. External Integration Logs (3 loại)
+## Hướng Dẫn Sử Dụng
 
-48. **api_gateway_log** - Log API Gateway
-49. **webhook_log** - Log webhooks
-50. **third_party_log** - Log tích hợp bên thứ 3
+### 1. Tạo Sự Cố Bất Thường Thủ Công
 
-### X. Monitoring & Observability Logs (3 loại)
+Truy cập http://localhost:8000 và sử dụng giao diện web:
 
-51. **metrics_log** - Log metrics (Prometheus)
-52. **trace_log** - Log distributed tracing
-53. **alert_notification_log** - Log thông báo cảnh báo
-
-### XI. Business Intelligence & Analytics Logs (2 loại)
-
-54. **analytics_log** - Log phân tích dữ liệu
-55. **reporting_log** - Log báo cáo
-
-### XII. Specialized Logs (4 loại)
-
-56. **ml_model_log** - Log machine learning models
-57. **blockchain_log** - Log blockchain transactions
-58. **risk_scoring_log** - Log đánh giá rủi ro
-59. **alert_log** - Log cảnh báo
-
-## 🎭 20 Kịch Bản Sự Cố Hạ Tầng
-
-Hệ thống hỗ trợ 20 kịch bản sự cố infrastructure được định nghĩa chi tiết:
-
-### Nhóm 1: CPU & Memory (5 kịch bản)
-
-1. **CPU_SPIKE** - Tăng đột biến CPU lên 95%+
-2. **MEMORY_LEAK** - Rò rỉ bộ nhớ tăng dần
-3. **THREAD_EXHAUSTION** - Cạn kiệt thread pool
-4. **GC_PRESSURE** - Garbage Collection quá tải
-5. **CONTEXT_SWITCHING** - Context switching cao bất thường
-
-### Nhóm 2: Network (5 kịch bản)
-
-6. **NETWORK_LATENCY** - Độ trễ mạng tăng cao
-7. **PACKET_LOSS** - Mất gói tin
-8. **BANDWIDTH_SATURATION** - Băng thông bão hòa
-9. **DNS_RESOLUTION_FAILURE** - Lỗi phân giải DNS
-10. **CONNECTION_TIMEOUT** - Timeout kết nối
-
-### Nhóm 3: Storage & I/O (5 kịch bản)
-
-11. **DISK_IO_BOTTLENECK** - Nghẽn cổ chai I/O đĩa
-12. **DISK_SPACE_EXHAUSTION** - Hết dung lượng đĩa
-13. **INODE_EXHAUSTION** - Hết inode
-14. **SLOW_DISK_READ** - Đọc đĩa chậm
-15. **RAID_DEGRADATION** - RAID suy giảm
-
-### Nhóm 4: Application & Service (5 kịch bản)
-
-16. **SERVICE_UNAVAILABLE** - Service không khả dụng
-17. **API_RATE_LIMIT** - Vượt giới hạn API
-18. **DATABASE_CONNECTION_POOL** - Cạn kiệt connection pool
-19. **CACHE_MISS_STORM** - Cache miss hàng loạt
-20. **DEADLOCK_DETECTION** - Phát hiện deadlock
-
-Mỗi kịch bản bao gồm:
-- **Metrics cụ thể**: CPU, memory, latency, error rate...
-- **Root causes**: Nguyên nhân gốc rễ
-- **Severity levels**: Mức độ nghiêm trọng (Low/Medium/High/Critical)
-- **Detection logic**: Logic phát hiện
-- **Correlation patterns**: Mẫu tương quan với các metrics khác
-
-## 📁 Log Được Lưu Ở Đâu?
-
-### Vị Trí Lưu Trữ
-
-Tất cả log được ghi vào thư mục:
-
-\`\`\`
-stages/00-mock-servers/logs/
-\`\`\`
-
-### Cấu Trúc Thư Mục (13 Danh Mục)
-
-\`\`\`
-stages/00-mock-servers/
-├── logs/                           ← Thư mục chứa tất cả log
-│   ├── infrastructure/             ← Log hạ tầng (9 loại)
-│   │   ├── server_log_20250102.log
-│   │   ├── network_log_20250102.log
-│   │   ├── container_log_20250102.log
-│   │   └── ...
-│   ├── application/                ← Log ứng dụng (6 loại)
-│   │   ├── application_log_20250102.log
-│   │   ├── api_log_20250102.log
-│   │   └── ...
-│   ├── database/                   ← Log database (8 loại)
-│   │   ├── database_log_20250102.log
-│   │   ├── sql_query_log_20250102.log
-│   │   └── ...
-│   ├── security/                   ← Log bảo mật (7 loại)
-│   │   ├── security_log_20250102.log
-│   │   ├── authentication_log_20250102.log
-│   │   └── ...
-│   ├── transaction/                ← Log giao dịch (5 loại)
-│   │   ├── transaction_log_20250102.log
-│   │   ├── payment_log_20250102.log
-│   │   └── ...
-│   ├── fraud/                      ← Log phát hiện gian lận (3 loại)
-│   │   ├── fraud_detection_log_20250102.log
-│   │   ├── aml_log_20250102.log
-│   │   └── ...
-│   ├── user_behavior/              ← Log hành vi người dùng (6 loại)
-│   │   ├── user_activity_log_20250102.log
-│   │   ├── session_log_20250102.log
-│   │   └── ...
-│   ├── compliance/                 ← Log tuân thủ (3 loại)
-│   │   ├── audit_log_20250102.log
-│   │   └── ...
-│   ├── integration/                ← Log tích hợp (3 loại)
-│   │   ├── api_gateway_log_20250102.log
-│   │   └── ...
-│   ├── monitoring/                 ← Log giám sát (3 loại)
-│   │   ├── metrics_log_20250102.log
-│   │   └── ...
-│   ├── business_intelligence/      ← Log BI (2 loại)
-│   │   ├── analytics_log_20250102.log
-│   │   └── ...
-│   ├── specialized/                ← Log chuyên biệt (4 loại)
-│   │   ├── ml_model_log_20250102.log
-│   │   └── ...
-│   └── anomaly/                    ← ⚠️ Log bất thường (anomaly_score > 70)
-│       └── anomaly_20250102.log
-\`\`\`
-
-### Quy Tắc Phân Loại Log
-
-1. **Log thường** (anomaly_score ≤ 70): Ghi vào thư mục danh mục tương ứng
-2. **Log bất thường** (anomaly_score > 70): Ghi vào cả 2 nơi:
-   - Thư mục danh mục gốc (ví dụ: `transaction/`)
-   - Thư mục `anomaly/` (để dễ phân tích)
-
-### Định Dạng Log
-
-Mỗi dòng trong file log là một JSON object:
-
-\`\`\`json
+```javascript
+// Ví dụ API call
+POST http://localhost:8000/api/anomaly/trigger
 {
-  "timestamp": "2025-01-02T10:30:45.123Z",
-  "log_type": "payment_log",
-  "data": {
-    "transaction_id": "TXN20250102103045789",
-    "amount": 5000000,
-    "currency": "VND",
-    "from_account": "****1234",
-    "to_account": "****5678",
-    "status": "completed",
-    "gateway": "VNPAY",
-    "processing_time_ms": 1250,
-    "anomaly_score": 15.5
-  }
+    "anomaly_type": "cpu_spike",
+    "intensity": 90,
+    "duration_seconds": 60
 }
-\`\`\`
+```
 
-### Xem Log Real-time
+### 2. Monitoring Real-time
 
-\`\`\`bash
-# Xem log application đang được tạo
-tail -f stages/00-mock-servers/logs/application/application_log_$(date +%Y%m%d).log
+```bash
+# Xem logs của một service cụ thể
+docker-compose logs -f scenario-orchestrator
 
-# Xem log payment
-tail -f stages/00-mock-servers/logs/transaction/payment_log_$(date +%Y%m%d).log
+# Xem metrics tổng hợp
+curl http://localhost:8005/api/aggregation/stats
+```
 
-# Xem TẤT CẢ log bất thường
-tail -f stages/00-mock-servers/logs/anomaly/anomaly_$(date +%Y%m%d).log
+### 3. Query Consolidated Logs
 
-# Đếm số dòng log đã tạo
-find stages/00-mock-servers/logs/ -name "*.log" -exec wc -l {} + | tail -1
-\`\`\`
+```python
+import requests
 
-## 🚀 Hướng Dẫn Khởi Động
+# Lấy logs đã chuẩn hóa
+response = requests.get("http://localhost:8005/api/consolidated-logs")
+logs = response.json()["logs"]
 
-### Bước 1: Yêu Cầu Hệ Thống
+# Lọc logs có anomaly cao
+high_anomaly_logs = [
+    log for log in logs 
+    if float(log["attributes"].get("anomaly_score", 0)) > 70
+]
+```
 
-- **Docker** và **Docker Compose** (bắt buộc)
-- **RAM**: Tối thiểu 4GB khả dụng
-- **Ổ cứng**: Tối thiểu 10GB trống
+### 4. Tùy Chỉnh Log Generation
 
-Kiểm tra Docker:
-
-\`\`\`bash
-docker --version
-docker compose version
-\`\`\`
-
-### Bước 2: Khởi Động Hệ Thống
-
-\`\`\`bash
-# Di chuyển vào thư mục
-cd stages/00-mock-servers
-
-# Khởi động (lần đầu mất 2-3 phút để build)
-docker compose up --build
-
-# Hoặc chạy nền
-docker compose up -d --build
-\`\`\`
-
-### Bước 3: Kiểm Tra Hệ Thống
-
-Mở trình duyệt và truy cập:
-
-- **🎨 Scenario Orchestrator (UI)**: http://localhost:8000
-- **Pattern Generator**: http://localhost:8001
-- **Log Synthesis**: http://localhost:8002
-- **State Manager**: http://localhost:8003
-- **Ingestion Interface**: http://localhost:8004
-
-Nếu tất cả đều mở được → ✅ Thành công!
-
-### Bước 4: Kiểm Tra Log Đang Được Tạo
-
-\`\`\`bash
-# Kiểm tra thư mục logs
-ls -la stages/00-mock-servers/logs/
-
-# Xem log real-time
-tail -f stages/00-mock-servers/logs/application/application_log_$(date +%Y%m%d).log
-\`\`\`
-
-### Bước 5: Dừng Hệ Thống
-
-\`\`\`bash
-# Dừng tất cả
-docker compose down
-
-# Dừng và XÓA dữ liệu
-docker compose down -v
-\`\`\`
-
-## 🏗️ Kiến Trúc Hệ Thống
-
-\`\`\`
-┌─────────────────────────────────────────────────────────────┐
-│           1. Scenario Orchestrator (Port 8000)              │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  🎨 Web UI - Tạo Sự Cố Thủ Công                      │   │
-│  │  • 8 nút preset sự cố nhanh                          │   │
-│  │  • Form tùy chỉnh chi tiết                           │   │
-│  │  • Thống kê real-time                                │   │
-│  └──────────────────────────────────────────────────────┘   │
-│  • Quản lý 20 kịch bản sự cố hạ tầng                        │
-│  • Tự động tạo log liên tục khi khởi động                   │
-│  • Chèn anomaly với tần suất thấp (0.02%)                   │
-│  • Hỗ trợ tất cả 59 loại log                                │
-└────────────────┬────────────────────────────────────────────┘
-                 │
-        ┌────────┴────────┐
-        ▼                 ▼
-┌──────────────┐   ┌──────────────┐
-│2. Pattern    │   │4. State      │
-│   Generator  │   │   Manager    │
-│(Port 8001)   │   │(Port 8003)   │
-│• Tạo mẫu     │   │• Quản lý     │
-│  dữ liệu VN  │   │  trạng thái  │
-│• 59 loại log │   │• Audit trail │
-└──────┬───────┘   └──────────────┘
-       │
-       ▼
-┌──────────────────────────────────┐
-│3. Log Synthesis (Port 8002)      │
-│• Tạo log từ mẫu                  │
-│• 100 log/giây (mặc định)         │
-│• Phân phối tần suất thực tế:     │
-│  - Infrastructure: 40%           │
-│  - Application: 25%              │
-│  - Database: 15%                 │
-│  - Security: 10%                 │
-│  - Transaction: 5%               │
-│  - Khác: 5%                      │
-└────────┬─────────────────────────┘
-         │
-         ▼
-┌────────────────────────────────────┐
-│5. Ingestion Interface (Port 8004) │
-│• Nhận log từ Log Synthesis        │
-│• Phân loại vào 13 danh mục        │
-│• Ghi vào file theo ngày           │
-│• Anomaly (score > 70) → anomaly/  │
-│• In progress mỗi 10,000 logs      │
-└────────┬───────────────────────────┘
-         │
-         ▼
-    📁 logs/
-    ├── infrastructure/
-    ├── application/
-    ├── database/
-    ├── security/
-    ├── transaction/
-    ├── fraud/
-    ├── user_behavior/
-    ├── compliance/
-    ├── integration/
-    ├── monitoring/
-    ├── business_intelligence/
-    ├── specialized/
-    └── anomaly/  ← Log bất thường
-\`\`\`
-
-## 📊 API Quan Trọng
-
-### Scenario Orchestrator (Port 8000)
-
-\`\`\`bash
-# Xem trạng thái tạo log liên tục
-curl http://localhost:8000/api/continuous/status
-
-# Dừng tạo log
-curl -X POST http://localhost:8000/api/continuous/stop
-
-# Bắt đầu tạo log với cấu hình tùy chỉnh
-curl -X POST http://localhost:8000/api/continuous/start \
-  -H "Content-Type: application/json" \
-  -d '{
-    "normal_log_rate": 100,
-    "anomaly_frequency": 0.0002
-  }'
-
-# Tạo sự cố thủ công qua API
-curl -X POST http://localhost:8000/api/anomaly/trigger \
-  -H "Content-Type: application/json" \
-  -d '{
-    "log_type": "payment_log",
-    "severity": 85,
-    "duration": 300,
-    "count": 1000
-  }'
-\`\`\`
-
-### Log Synthesis (Port 8002)
-
-\`\`\`bash
-# Xem tất cả loại log được hỗ trợ
-curl http://localhost:8002/api/log-types
-
-# Tạo log cụ thể
-curl -X POST http://localhost:8002/api/synthesize \
-  -H "Content-Type: application/json" \
-  -d '{
-    "log_type": "fraud_detection_log",
+```python
+# Tạo custom log type
+POST http://localhost:8002/api/synthesize
+{
+    "log_type": "payment_transaction_log",
     "scenario_id": "FRAUD_001",
     "count": 100,
-    "anomaly_score": 85
-  }'
-
-# Xem thống kê
-curl http://localhost:8002/api/logs/stats
-\`\`\`
-
-### Ingestion Interface (Port 8004)
-
-\`\`\`bash
-# Xem thống kê log đã ghi
-curl http://localhost:8004/api/logs/stats
-
-# Kết quả mẫu:
-{
-  "base_directory": "/app/logs",
-  "log_categories": {
-    "infrastructure": {
-      "files": 9,
-      "total_lines": 150000,
-      "total_size_mb": 45.2
-    },
-    "anomaly": {
-      "files": 1,
-      "total_lines": 300,
-      "total_size_mb": 0.5
-    }
-  }
+    "anomaly_score": 85.5
 }
-\`\`\`
+```
 
-## ⚙️ Cấu Hình Tần Suất
+### 5. Export và Analysis
 
-### Tần Suất Mặc Định
-
-\`\`\`json
-{
-  "normal_log_rate": 100,        // 100 log/giây
-  "anomaly_frequency": 0.0002    // 1 anomaly mỗi 5,000 log (0.02%)
-}
-\`\`\`
-
-### Tần Suất Khuyến Nghị
-
-| Môi Trường | Log/giây | Anomaly Frequency | Ý Nghĩa |
-|------------|----------|-------------------|---------|
-| **Development** | 10-50 | 0.001 (0.1%) | 1 anomaly/1,000 log |
-| **Testing** | 100-200 | 0.0002 (0.02%) | 1 anomaly/5,000 log |
-| **Staging** | 500-1000 | 0.0001 (0.01%) | 1 anomaly/10,000 log |
-| **Production-like** | 1000+ | 0.00005 (0.005%) | 1 anomaly/20,000 log |
+```bash
+# Export logs to JSON
+curl http://localhost:8005/api/consolidated-logs > logs.json
 
-### Thay Đổi Tần Suất
+# Xem thống kê theo timeline
+curl "http://localhost:8005/api/aggregation/timeline?minutes=60"
+```
 
-\`\`\`bash
-# Tăng tần suất anomaly (testing)
-curl -X POST http://localhost:8000/api/continuous/start \
-  -H "Content-Type: application/json" \
-  -d '{
-    "normal_log_rate": 100,
-    "anomaly_frequency": 0.001
-  }'
+## Các Phần Bổ Sung
 
-# Giảm tần suất (production-like)
-curl -X POST http://localhost:8000/api/continuous/start \
-  -H "Content-Type: application/json" \
-  -d '{
-    "normal_log_rate": 1000,
-    "anomaly_frequency": 0.00005
-  }'
-\`\`\`
+### Troubleshooting
 
-## 🔍 Giám Sát Hệ Thống
+**Vấn đề: Services không healthy**
+- Giải pháp: Kiểm tra logs với `docker-compose logs [service-name]`
+- Restart service: `docker-compose restart [service-name]`
 
-### Kiểm Tra Services
+**Vấn đề: Logs không được forward**
+- Kiểm tra network connectivity: `docker exec -it scenario-orchestrator ping log-synthesis`
+- Verify endpoints: `curl http://localhost:8002/health`
 
-\`\`\`bash
-# Xem tất cả containers
-docker compose ps
+### Contributing Guidelines
 
-# Xem log của services
-docker compose logs -f
+1. Fork repository
+2. Tạo feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open Pull Request
 
-# Xem log của một service
-docker compose logs -f log-synthesis
+### Performance Considerations
 
-# Kiểm tra health
-curl http://localhost:8000/health
-curl http://localhost:8001/health
-curl http://localhost:8002/health
-curl http://localhost:8003/health
-curl http://localhost:8004/health
-\`\`\`
+- **Log rotation**: Implement log rotation cho /app/logs directory
+- **Memory management**: Monitor container memory với `docker stats`
+- **Rate limiting**: Điều chỉnh rate limits dựa trên system capacity
+- **Batch processing**: Tối ưu batch_size cho throughput tốt nhất
+- **2GB RAM Optimization**:
+  - ✅ Sử dụng file storage mode cho log consolidation
+  - ⚠️ Tắt RAM storage để tiết kiệm tài nguyên
+  - 📝 Monitor memory usage với `docker logs log-consolidation`
 
-### Xem Thống Kê Log
+### Security Notes
 
-\`\`\`bash
-# Xem dung lượng logs
-du -sh stages/00-mock-servers/logs/
-du -sh stages/00-mock-servers/logs/*/
+- **Network isolation**: Services chỉ expose ports cần thiết
+- **Input validation**: Pydantic models validate tất cả inputs
+- **Rate limiting**: Bảo vệ khỏi DoS attacks
+- **Log sanitization**: Sensitive data được mask trong logs
 
-# Đếm số dòng log
-find stages/00-mock-servers/logs/ -name "*.log" -exec wc -l {} + | tail -1
+### Roadmap
 
-# Đếm anomaly logs
-wc -l stages/00-mock-servers/logs/anomaly/*.log
-\`\`\`
+- [ ] Kafka integration cho real-time streaming
+- [ ] Elasticsearch output connector
+- [ ] Machine Learning anomaly scoring
+- [ ] Grafana dashboard templates
+- [ ] Kubernetes deployment manifests
+- [x] **✅ File storage optimization cho 2GB RAM systems**
+- [ ] Log rotation và compression
+- [ ] Prometheus metrics integration
 
-## 🛠️ Xử Lý Sự Cố
-
-### Vấn Đề 1: Không Thấy Log Anomaly
-
-**Triệu chứng:** Thư mục `logs/anomaly/` rỗng hoặc không có file
-
-**Nguyên nhân:** 
-- Anomaly score của log < 70 (ngưỡng mặc định)
-- Tần suất anomaly quá thấp (0.02% = 1/5000 log)
-
-**Giải pháp:**
-
-\`\`\`bash
-# Cách 1: Tăng tần suất anomaly
-curl -X POST http://localhost:8000/api/continuous/start \
-  -H "Content-Type: application/json" \
-  -d '{"normal_log_rate": 100, "anomaly_frequency": 0.01}'
-
-# Cách 2: Tạo anomaly thủ công qua UI
-# Mở http://localhost:8000 và nhấn nút "CPU Spike" hoặc "Security Breach"
-
-# Cách 3: Tạo anomaly qua API
-curl -X POST http://localhost:8000/api/anomaly/trigger \
-  -H "Content-Type: application/json" \
-  -d '{
-    "log_type": "payment_log",
-    "severity": 90,
-    "duration": 60,
-    "count": 100
-  }'
-
-# Đợi vài giây và kiểm tra
-ls -la stages/00-mock-servers/logs/anomaly/
-\`\`\`
-
-### Vấn Đề 2: Chỉ Có 3 Thư Mục Log
-
-**Triệu chứng:** Chỉ thấy `application/`, `security/`, `transaction/`
-
-**Nguyên nhân:** Log synthesis chưa tạo đủ các loại log khác
-
-**Giải pháp:**
-
-\`\`\`bash
-# Kiểm tra log synthesis có chạy không
-curl http://localhost:8002/health
-
-# Xem loại log đang được tạo
-curl http://localhost:8002/api/log-types
-
-# Restart services để áp dụng cấu hình mới
-docker compose restart
-
-# Đợi 1-2 phút để hệ thống tạo đủ các loại log
-sleep 120
-ls -la stages/00-mock-servers/logs/
-\`\`\`
-
-### Vấn Đề 3: Port Already Allocated
-
-**Triệu chứng:** `Error: Bind for 0.0.0.0:8001 failed`
-
-**Giải pháp:**
-
-\`\`\`bash
-# Tìm process đang chiếm port
-lsof -i :8001
-
-# Dừng process (thay <PID>)
-kill -9 <PID>
-
-# Hoặc đổi port trong docker-compose.yml
-# Sửa "8001:8001" thành "9001:8001"
-\`\`\`
-
-### Vấn Đề 4: Services Không Khởi Động
-
-**Giải pháp:**
-
-\`\`\`bash
-# Xem log lỗi
-docker compose logs
-
-# Rebuild từ đầu
-docker compose down -v
-docker compose build --no-cache
-docker compose up -d
-
-# Kiểm tra lại
-docker compose ps
-\`\`\`
-
-### Vấn Đề 5: Log Tạo Quá Nhanh
-
-**Giải pháp:**
-
-\`\`\`bash
-# Giảm tốc độ
-curl -X POST http://localhost:8000/api/continuous/start \
-  -H "Content-Type: application/json" \
-  -d '{"normal_log_rate": 10, "anomaly_frequency": 0.0002}'
-
-# Xóa log cũ
-rm -rf stages/00-mock-servers/logs/*/2025*.log
-\`\`\`
-
-## 📈 Tăng Hiệu Năng
-
-### Tăng Tốc Độ Tạo Log
-
-\`\`\`bash
-# 500 log/giây
-curl -X POST http://localhost:8000/api/continuous/start \
-  -H "Content-Type: application/json" \
-  -d '{"normal_log_rate": 500, "anomaly_frequency": 0.0002}'
-
-# 1000 log/giây
-curl -X POST http://localhost:8000/api/continuous/start \
-  -H "Content-Type: application/json" \
-  -d '{"normal_log_rate": 1000, "anomaly_frequency": 0.0002}'
-\`\`\`
-
-### Scale Services
-
-\`\`\`bash
-# Scale log-synthesis
-docker compose up -d --scale log-synthesis=3
-
-# Scale pattern-generator
-docker compose up -d --scale pattern-generator=5
-\`\`\`
-
-## 📚 Ví Dụ Sử Dụng
-
-### Ví Dụ 1: Mô Phỏng Tấn Công DDoS
-
-\`\`\`bash
-# Qua UI: Nhấn nút "Security Breach"
-
-# Hoặc qua API:
-curl -X POST http://localhost:8000/api/anomaly/trigger \
-  -H "Content-Type: application/json" \
-  -d '{
-    "log_type": "waf_log",
-    "severity": 95,
-    "duration": 300,
-    "count": 5000
-  }'
-\`\`\`
-
-### Ví Dụ 2: Mô Phỏng Database Chậm
-
-\`\`\`bash
-# Qua UI: Nhấn nút "Database Slow"
-
-# Hoặc qua API:
-curl -X POST http://localhost:8000/api/anomaly/trigger \
-  -H "Content-Type: application/json" \
-  -d '{
-    "log_type": "slow_query_log",
-    "severity": 80,
-    "duration": 600,
-    "count": 1000
-  }'
-\`\`\`
-
-### Ví Dụ 3: Phân Tích Log Bằng Python
-
-\`\`\`python
-import json
-from pathlib import Path
-from collections import Counter
-
-# Đọc tất cả anomaly logs
-anomaly_dir = Path('stages/00-mock-servers/logs/anomaly/')
-anomalies = []
-
-for log_file in anomaly_dir.glob('*.log'):
-    with open(log_file, 'r') as f:
-        anomalies.extend([json.loads(line) for line in f])
-
-# Phân tích theo loại log
-log_types = Counter(log['log_type'] for log in anomalies)
-print("Phân bố anomaly theo loại:", log_types)
-
-# Phân tích theo mức độ nghiêm trọng
-high_severity = [
-    log for log in anomalies 
-    if log['data'].get('anomaly_score', 0) > 85
-]
-print(f"Anomaly nghiêm trọng (>85): {len(high_severity)}")
-
-# Tìm top 10 anomaly cao nhất
-top_anomalies = sorted(
-    anomalies, 
-    key=lambda x: x['data'].get('anomaly_score', 0),
-    reverse=True
-)[:10]
-
-for i, log in enumerate(top_anomalies, 1):
-    print(f"{i}. {log['log_type']}: {log['data'].get('anomaly_score')}")
-\`\`\`
-
-## 🎓 Câu Hỏi Thường Gặp (FAQ)
-
-### Q1: Làm sao để tạo sự cố thủ công?
-
-**Đáp:** Có 3 cách:
-
-1. **Qua UI** (Dễ nhất): Mở http://localhost:8000 và nhấn một trong 8 nút preset
-2. **Qua API**: Gọi endpoint `/api/anomaly/trigger` với JSON config
-3. **Qua Form tùy chỉnh**: Điền form trên UI với các tham số chi tiết
-
-### Q2: Tại sao không thấy log anomaly?
-
-**Đáp:** Có 3 lý do:
-
-1. **Tần suất quá thấp**: Mặc định 0.02% = 1 anomaly/5,000 log. Tăng lên bằng cách gọi API hoặc tạo thủ công
-2. **Anomaly score < 70**: Chỉ log có score > 70 mới được ghi vào `anomaly/`
-3. **Chưa đủ thời gian**: Đợi ít nhất 1-2 phút để hệ thống tạo đủ log
-
-### Q3: Làm sao biết log nào là anomaly?
-
-**Đáp:** Kiểm tra field `anomaly_score` trong JSON:
-
-- **0-30**: Bình thường
-- **31-50**: Nghi ngờ nhẹ
-- **51-70**: Nghi ngờ cao
-- **71-85**: Bất thường
-- **86-100**: Bất thường nghiêm trọng
-
-Log có score > 70 sẽ được ghi vào thư mục `anomaly/`
-
-### Q4: Có thể tạo chỉ một loại log không?
-
-**Đáp:** Có! Sử dụng API của Log Synthesis:
-
-\`\`\`bash
-curl -X POST http://localhost:8002/api/synthesize \
-  -H "Content-Type: application/json" \
-  -d '{
-    "log_type": "payment_log",
-    "scenario_id": "DEMO",
-    "count": 1000,
-    "anomaly_score": 20
-  }'
-\`\`\`
-
-### Q5: Log có dữ liệu Việt Nam không?
-
-**Đáp:** Có! Tất cả log sử dụng:
-- Số điện thoại VN (090x, 091x...)
-- IP của ISP VN (113.161.x.x, 116.103.x.x...)
-- Tên người VN (Nguyễn Văn A, Trần Thị B...)
-- Địa chỉ VN (Hà Nội, TP.HCM, Đà Nẵng...)
-- Tiền tệ VND
-
-### Q6: Làm sao để xóa log cũ?
-
-**Đáp:**
-
-\`\`\`bash
-# Xóa tất cả log
-rm -rf stages/00-mock-servers/logs/
-
-# Xóa log của một ngày cụ thể
-rm -rf stages/00-mock-servers/logs/*/2025-01-01*.log
-
-# Xóa chỉ anomaly logs
-rm -rf stages/00-mock-servers/logs/anomaly/*.log
-\`\`\`
-
-## 📄 Giấy Phép
-
-MIT License - Xem file LICENSE để biết chi tiết.
-
----
-
-**Lưu ý:** Hệ thống này chỉ dùng cho mục đích kiểm thử và huấn luyện. Không sử dụng trong môi trường production thực tế.

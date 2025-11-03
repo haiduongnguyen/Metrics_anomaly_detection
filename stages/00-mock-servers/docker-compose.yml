@@ -113,6 +113,9 @@ services:
     environment:
       - LOG_LEVEL=INFO
       - MAX_CONSOLIDATED_LOGS=10000
+      - ENABLE_RAM_STORAGE=false
+      - ENABLE_FILE_STORAGE=true
+      - MAX_RAM_LOGS=1000
     networks:
       - anomaly-network
     restart: unless-stopped
@@ -122,6 +125,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    volumes:
+      - ./logs:/app/logs
     depends_on:
       ingestion-interface:
         condition: service_healthy

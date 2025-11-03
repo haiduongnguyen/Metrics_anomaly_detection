@@ -13,6 +13,8 @@ import uuid
 import asyncio
 from enum import Enum
 import re
+import os
+from pathlib import Path
 
 from log_record import LogRecordObject, Severity, LogAttribute
 from log_normalizer import LogNormalizer
@@ -51,13 +53,64 @@ class ConsolidatedLogResponse(BaseModel):
 log_normalizer = LogNormalizer()
 log_aggregator = LogAggregator()
 
-# In-memory storage for recent logs
+# Configuration - Default to disabled RAM storage to save memory
+ENABLE_RAM_STORAGE = os.getenv("ENABLE_RAM_STORAGE", "false").lower() == "true"
+ENABLE_FILE_STORAGE = os.getenv("ENABLE_FILE_STORAGE", "true").lower() == "true"
+MAX_RAM_LOGS = int(os.getenv("MAX_RAM_LOGS", "1000"))  # Reduced from 10000 to save RAM
+
+# In-memory storage for recent logs (configurable)
 consolidated_logs: List[LogRecordObject] = []
 logs_by_source: Dict[str, List[LogRecordObject]] = {}
+
+# File storage configuration
+LOGS_DIR = Path("/app/logs/consolidated")
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
+def get_log_file_path() -> Path:
+    """Get current day's log file path"""
+    today = datetime.now().strftime("%Y%m%d")
+    return LOGS_DIR / f"consolidated_logs_{today}.jsonl"
+
+def write_log_to_file(log_record: LogRecordObject) -> None:
+    """Write a single log record to file"""
+    if not ENABLE_FILE_STORAGE:
+        return
+        
+    try:
+        # Convert to dict for JSON serialization
+        log_dict = {
+            "timestamp": log_record.timestamp,
+            "body": log_record.body,
+            "observed_timestamp": log_record.observed_timestamp,
+            "severity_text": log_record.severity_text,
+            "severity_number": log_record.severity_number,
+            "trace_id": log_record.trace_id,
+            "span_id": log_record.span_id,
+            "attributes": log_record.attributes,
+            "resource": {
+                "attributes": log_record.resource.attributes
+            } if log_record.resource else {},
+            "instrumentation_scope": {
+                "name": log_record.instrumentation_scope.name,
+                "version": log_record.instrumentation_scope.version
+            } if log_record.instrumentation_scope else {}
+        }
+        
+        log_file = get_log_file_path()
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_dict, ensure_ascii=False) + "\n")
+            
+    except Exception as e:
+        print(f"[v0] Error writing log to file: {e}")
 
 @app.on_event("startup")
 async def startup_event():
     print("[v0] Log Consolidation Service started")
+    print(f"[v0] RAM Storage: {'ENABLED' if ENABLE_RAM_STORAGE else 'DISABLED'}")
+    print(f"[v0] File Storage: {'ENABLED' if ENABLE_FILE_STORAGE else 'DISABLED'}")
+    if ENABLE_FILE_STORAGE:
+        print(f"[v0] Log files directory: {LOGS_DIR}")
+        print(f"[v0] Today's log file: {get_log_file_path()}")
     print("[v0] Ready to normalize logs to OpenTelemetry LogRecord format")
 
 @app.get("/")
@@ -320,18 +373,22 @@ async def consolidate_logs(request: ConsolidatedLogRequest):
                 log_records.append(log_record)
                 processed_count += 1
                 
-                # Store in memory (keep last 10000)
-                consolidated_logs.append(log_record)
-                if len(consolidated_logs) > 10000:
-                    consolidated_logs[:0] = []
+                # Write to file (enabled by default)
+                write_log_to_file(log_record)
                 
-                # Store by source
-                source = raw_log_dict["source"]
-                if source not in logs_by_source:
-                    logs_by_source[source] = []
-                logs_by_source[source].append(log_record)
-                if len(logs_by_source[source]) > 5000:
-                    logs_by_source[source][:0] = []
+                # Store in memory only if enabled
+                if ENABLE_RAM_STORAGE:
+                    consolidated_logs.append(log_record)
+                    if len(consolidated_logs) > MAX_RAM_LOGS:
+                        consolidated_logs[:0] = []
+                    
+                    # Store by source in memory
+                    source = raw_log_dict["source"]
+                    if source not in logs_by_source:
+                        logs_by_source[source] = []
+                    logs_by_source[source].append(log_record)
+                    if len(logs_by_source[source]) > MAX_RAM_LOGS:
+                        logs_by_source[source][:0] = []
                     
             except Exception as e:
                 error_source = raw_log.source if hasattr(raw_log, 'source') else raw_log_dict.get('source', 'unknown') if 'raw_log_dict' in locals() else 'unknown'
@@ -354,20 +411,120 @@ async def consolidate_logs(request: ConsolidatedLogRequest):
 @app.get("/api/consolidated-logs")
 async def get_consolidated_logs():
     """Get all consolidated logs"""
-    return {
-        "logs": consolidated_logs[-1000:],  # Return last 1000 logs
-        "total_count": len(consolidated_logs),
-        "sources": list(logs_by_source.keys())
-    }
+    if ENABLE_RAM_STORAGE:
+        return {
+            "logs": consolidated_logs[-MAX_RAM_LOGS:],  # Return last RAM logs
+            "total_count": len(consolidated_logs),
+            "sources": list(logs_by_source.keys()),
+            "storage_type": "ram"
+        }
+    else:
+        # Read from file if RAM storage is disabled
+        if not ENABLE_FILE_STORAGE:
+            return {
+                "logs": [],
+                "total_count": 0,
+                "sources": [],
+                "storage_type": "none",
+                "message": "Both RAM and file storage are disabled"
+            }
+        
+        try:
+            log_file = get_log_file_path()
+            if not log_file.exists():
+                return {
+                    "logs": [],
+                    "total_count": 0,
+                    "sources": [],
+                    "storage_type": "file",
+                    "message": "No log files found"
+                }
+            
+            logs = []
+            sources = set()
+            with open(log_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        log_data = json.loads(line)
+                        logs.append(log_data)
+                        if "resource" in log_data and "attributes" in log_data["resource"]:
+                            service_name = log_data["resource"]["attributes"].get("service.name", "unknown")
+                            sources.add(service_name)
+            
+            # Return last 1000 logs from file
+            return {
+                "logs": logs[-1000:],
+                "total_count": len(logs),
+                "sources": list(sources),
+                "storage_type": "file"
+            }
+            
+        except Exception as e:
+            return {
+                "logs": [],
+                "total_count": 0,
+                "sources": [],
+                "storage_type": "file",
+                "error": f"Failed to read logs from file: {str(e)}"
+            }
 
 @app.get("/api/consolidated-logs/by-source/{source}")
 async def get_logs_by_source(source: str):
     """Get logs from specific source"""
-    return {
-        "source": source,
-        "logs": logs_by_source.get(source, []),
-        "count": len(logs_by_source.get(source, []))
-    }
+    if ENABLE_RAM_STORAGE:
+        return {
+            "source": source,
+            "logs": logs_by_source.get(source, []),
+            "count": len(logs_by_source.get(source, [])),
+            "storage_type": "ram"
+        }
+    else:
+        # Read from file if RAM storage is disabled
+        if not ENABLE_FILE_STORAGE:
+            return {
+                "source": source,
+                "logs": [],
+                "count": 0,
+                "storage_type": "none",
+                "message": "Both RAM and file storage are disabled"
+            }
+        
+        try:
+            log_file = get_log_file_path()
+            if not log_file.exists():
+                return {
+                    "source": source,
+                    "logs": [],
+                    "count": 0,
+                    "storage_type": "file",
+                    "message": "No log files found"
+                }
+            
+            logs = []
+            with open(log_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        log_data = json.loads(line)
+                        if "resource" in log_data and "attributes" in log_data["resource"]:
+                            service_name = log_data["resource"]["attributes"].get("service.name", "unknown")
+                            if service_name == source:
+                                logs.append(log_data)
+            
+            return {
+                "source": source,
+                "logs": logs[-1000:],  # Return last 1000 logs
+                "count": len(logs),
+                "storage_type": "file"
+            }
+            
+        except Exception as e:
+            return {
+                "source": source,
+                "logs": [],
+                "count": 0,
+                "storage_type": "file",
+                "error": f"Failed to read logs from file: {str(e)}"
+            }
 
 @app.post("/api/simulate/ingestion")
 async def simulate_ingestion():
@@ -426,28 +583,80 @@ async def simulate_ingestion():
 @app.get("/api/aggregation/stats")
 async def get_aggregated_stats():
     """Get aggregated statistics across all logs"""
-    if not consolidated_logs:
-        return {"message": "No logs available"}
-    
-    stats = log_aggregator.aggregate_stats(consolidated_logs)
-    return stats
+    if ENABLE_RAM_STORAGE:
+        logs_to_analyze = consolidated_logs
+        if not logs_to_analyze:
+            return {"message": "No logs available"}
+        stats = log_aggregator.aggregate_stats(logs_to_analyze)
+        return stats
+    elif ENABLE_FILE_STORAGE:
+        # Read from file for analysis - return basic stats since aggregator expects LogRecordObject
+        # For file storage mode, we'll skip detailed analysis to avoid memory issues
+        total_logs = 0
+        try:
+            log_file = get_log_file_path()
+            if log_file.exists():
+                with open(log_file, "r", encoding="utf-8") as f:
+                    total_logs = sum(1 for line in f if line.strip())
+        except Exception:
+            pass
+            
+        return {
+            "message": "File storage mode - basic statistics only",
+            "file_stats": {
+                "total_logs": total_logs,
+                "storage_type": "file",
+                "ram_storage_disabled": True
+            }
+        }
+    else:
+        return {"message": "Both RAM and file storage are disabled"}
 
 @app.get("/api/aggregation/timeline")
 async def get_aggregated_timeline(minutes: int = 60):
     """Get aggregated timeline of logs"""
-    if not consolidated_logs:
+    logs_to_analyze = []
+    
+    if ENABLE_RAM_STORAGE:
+        logs_to_analyze = consolidated_logs
+    elif ENABLE_FILE_STORAGE:
+        # Read from file for timeline - return empty since aggregator expects LogRecordObject
+        return {
+            "timeline": [],
+            "message": "File storage mode - timeline analysis disabled to save memory",
+            "storage_type": "file",
+            "ram_storage_disabled": True
+        }
+    
+    if not logs_to_analyze:
         return {"timeline": []}
     
-    timeline = log_aggregator.aggregate_timeline(consolidated_logs, minutes)
+    timeline = log_aggregator.aggregate_timeline(logs_to_analyze, minutes)
     return {"timeline": timeline}
 
 @app.get("/health")
 async def health_check():
+    total_logs = 0
+    
+    if ENABLE_RAM_STORAGE:
+        total_logs = len(consolidated_logs)
+    elif ENABLE_FILE_STORAGE:
+        try:
+            log_file = get_log_file_path()
+            if log_file.exists():
+                with open(log_file, "r", encoding="utf-8") as f:
+                    total_logs = sum(1 for line in f if line.strip())
+        except Exception:
+            pass
+    
     return {
         "status": "healthy",
         "service": "log-consolidation",
-        "total_logs": len(consolidated_logs),
-        "sources_count": len(logs_by_source)
+        "total_logs": total_logs,
+        "sources_count": len(logs_by_source) if ENABLE_RAM_STORAGE else 0,
+        "ram_storage": ENABLE_RAM_STORAGE,
+        "file_storage": ENABLE_FILE_STORAGE,
+        "storage_type": "ram" if ENABLE_RAM_STORAGE else "file" if ENABLE_FILE_STORAGE else "none"
     }
 
 if __name__ == "__main__":
