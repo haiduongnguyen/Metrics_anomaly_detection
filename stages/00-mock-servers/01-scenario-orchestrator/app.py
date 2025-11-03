@@ -1610,11 +1610,14 @@ async def run_infrastructure_simulation(execution_id: str, scenario: Dict[str, A
         execution.completed_at = datetime.now()
         print(f"[v0] Infrastructure simulation failed: {e}")
 
+class ManualAnomalyRequest(BaseModel):
+    anomaly_type: str
+    intensity: float
+    duration_seconds: int
+
 @app.post("/api/anomaly/trigger")
 async def trigger_manual_anomaly(
-    anomaly_type: str,
-    intensity: float,
-    duration_seconds: int,
+    request: ManualAnomalyRequest,
     background_tasks: BackgroundTasks
 ):
     """Manually trigger a specific anomaly"""
@@ -1622,27 +1625,27 @@ async def trigger_manual_anomaly(
     
     execution = Execution(
         id=execution_id,
-        scenario_id=f"MANUAL_{anomaly_type.upper()}",
+        scenario_id=f"MANUAL_{request.anomaly_type.upper()}",
         status=ExecutionStatus.PENDING,
         config=ScenarioConfig(
-            scenario_id=f"MANUAL_{anomaly_type.upper()}",
-            parameters={"intensity": intensity, "anomaly_type": anomaly_type},
-            duration_seconds=duration_seconds,
+            scenario_id=f"MANUAL_{request.anomaly_type.upper()}",
+            parameters={"intensity": request.intensity, "anomaly_type": request.anomaly_type},
+            duration_seconds=request.duration_seconds,
             log_rate=100
         ),
         is_manual=True,
-        anomaly_type=anomaly_type
+        anomaly_type=request.anomaly_type
     )
     executions_db[execution_id] = execution
     
     # Start manual anomaly generation
-    background_tasks.add_task(run_manual_anomaly, execution_id, anomaly_type, intensity, duration_seconds)
+    background_tasks.add_task(run_manual_anomaly, execution_id, request.anomaly_type, request.intensity, request.duration_seconds)
     
     return {
         "execution_id": execution_id,
-        "anomaly_type": anomaly_type,
-        "intensity": intensity,
-        "duration": duration_seconds,
+        "anomaly_type": request.anomaly_type,
+        "intensity": request.intensity,
+        "duration": request.duration_seconds,
         "is_manual": True,
         "status": "started"
     }
