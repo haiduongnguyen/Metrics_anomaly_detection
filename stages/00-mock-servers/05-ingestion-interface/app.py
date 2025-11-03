@@ -13,6 +13,7 @@ import json
 from collections import deque
 import os
 from pathlib import Path
+import httpx
 
 app = FastAPI(title="Ingestion Interface Service", version="1.0.0")
 
@@ -109,6 +110,37 @@ auto_ingestion_state = {
     "total_ingested": 0,
     "last_minute_count": 0
 }
+
+# Log consolidation integration
+CONSOLIDATION_URL = os.getenv("CONSOLIDATION_URL", "http://log-consolidation:8005")
+
+async def forward_to_consolidation(logs: List[Dict[str, Any]]):
+    """Forward logs to consolidation service for OpenTelemetry standardization"""
+    try:
+        # Prepare raw logs for consolidation
+        raw_logs = []
+        for log_item in logs:
+            if log_item.get("log"):
+                log_data = log_item["log"]
+                raw_logs.append({
+                    "source": log_data.get("source", "ingestion-interface"),
+                    "timestamp": log_data.get("timestamp", datetime.now().isoformat()),
+                    "log_type": log_data.get("log_type", "unknown"),
+                    "data": log_data.get("data", {}),
+                    "metadata": log_item.get("metadata", {})
+                })
+        
+        if raw_logs:
+            async with httpx.AsyncClient() as client:
+                await client.post(
+                    f"{CONSOLIDATION_URL}/api/consolidate",
+                    json={"logs": raw_logs},
+                    timeout=5.0
+                )
+            print(f"[v0] Forwarded {len(raw_logs)} logs to consolidation service")
+    
+    except Exception as e:
+        print(f"[v0] Failed to forward logs to consolidation: {e}")
 
 @app.get("/")
 async def root():
@@ -343,15 +375,24 @@ async def process_queue_batch(count: int):
         
         processed = 0
         written = 0
+        processed_logs = []
+        
         while processed < count and ingestion_queue:
             log_item = ingestion_queue.popleft()
             
             if write_log_to_file(log_item["log"]):
                 written += 1
             
+            # Collect logs for forwarding to consolidation
+            processed_logs.append(log_item)
+            
             auto_ingestion_state["total_ingested"] += 1
             auto_ingestion_state["last_minute_count"] += 1
             processed += 1
+        
+        # Forward logs to consolidation service
+        if processed_logs:
+            await forward_to_consolidation(processed_logs)
         
         if auto_ingestion_state["total_ingested"] % 1000 == 0:
             print(f"[v0] Ingested {auto_ingestion_state['total_ingested']} logs, written {written} to files")

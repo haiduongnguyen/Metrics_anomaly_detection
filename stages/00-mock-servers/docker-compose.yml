@@ -89,6 +89,7 @@ services:
       - LOG_LEVEL=INFO
       - DEFAULT_RATE_LIMIT=1000
       - MAX_BATCH_SIZE=1000
+      - CONSOLIDATION_URL=http://log-consolidation:8005
     networks:
       - anomaly-network
     restart: unless-stopped
@@ -102,6 +103,27 @@ services:
       - ./logs:/app/logs
     depends_on:
       log-synthesis:
+        condition: service_healthy
+
+  log-consolidation:
+    build: ./06-log-consolidation
+    container_name: log-consolidation
+    ports:
+      - "8005:8005"
+    environment:
+      - LOG_LEVEL=INFO
+      - MAX_CONSOLIDATED_LOGS=10000
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      ingestion-interface:
         condition: service_healthy
 
 networks:
