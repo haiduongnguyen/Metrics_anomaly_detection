@@ -2,6 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
+venv_vpbank/
+code/
+*.tfvars
 
 # C extensions
 *.so
