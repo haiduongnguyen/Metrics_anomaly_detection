@@ -1,0 +1,11 @@
+{
+  "processed_partitions": [
+    "service=unknown/year=2025/month=11/day=09/hour=10"
+  ],
+  "last_scan": "2025-11-09T10:31:35.427743",
+  "stats": {
+    "total_processed": 0,
+    "total_failed": 1,
+    "last_success": null
+  }
+}

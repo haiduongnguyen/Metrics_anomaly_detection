@@ -1,331 +1,250 @@
 # README.md - Hệ Thống Mô Phỏng Log Bất Thường Ngân Hàng
 
-## Giới Thiệu và Tổng Quan Nghiệp Vụ
+## 1. Giới Thiệu và Tổng Quan
 
-Hệ thống **Banking Anomaly Log Simulation System** là một giải pháp toàn diện để mô phỏng và tạo ra các log bất thường trong môi trường ngân hàng. Dự án này được thiết kế để hỗ trợ việc phát triển, thử nghiệm và đánh giá các hệ thống phát hiện bất thường (anomaly detection) trong lĩnh vực tài chính ngân hàng.
-
-### Mục Đích Cốt Lõi
-- **Mô phỏng thực tế**: Tạo ra các log giống như môi trường production với 59 loại log khác nhau
-- **Phát hiện bất thường**: Hỗ trợ training và testing các mô hình ML/AI phát hiện gian lận
-- **Kiểm thử hệ thống**: Đánh giá khả năng xử lý và phản ứng của hệ thống monitoring
-- **Tuân thủ quy định**: Mô phỏng các tình huống liên quan đến compliance và audit
+Hệ thống **Mô Phỏng Log Bất Thường Ngân Hàng** là một môi trường microservices toàn diện, được thiết kế để tạo ra các dòng log thực tế và có chủ đích cho các hệ thống tài chính. Mục tiêu chính là cung cấp dữ liệu chất lượng cao để phát triển, huấn luyện và kiểm thử các hệ thống phát hiện bất thường (Anomaly Detection), giám sát bảo mật (SIEM), và phân tích nghiệp vụ (Business Intelligence).
 
 ### Vấn Đề Giải Quyết
-- Thiếu dữ liệu thực tế để test hệ thống phát hiện bất thường
-- Khó khăn trong việc tạo ra các kịch bản anomaly phức tạp
-- Cần môi trường an toàn để thử nghiệm các tình huống rủi ro cao
-- Yêu cầu về việc chuẩn hóa log theo OpenTelemetry
+- **Thiếu dữ liệu thực tế**: Các hệ thống Anomaly Detection thường thiếu dữ liệu log đa dạng và thực tế để huấn luyện và kiểm thử, đặc biệt là các kịch bản tấn công hoặc lỗi hiếm gặp.
+- **Khó tạo kịch bản phức tạp**: Việc giả lập các chuỗi sự kiện bất thường phức tạp, liên quan đến nhiều thành phần hệ thống (infrastructure, application, database) là rất khó khăn.
+- **Môi trường thử nghiệm an toàn**: Cung cấp một môi trường cô lập để thử nghiệm các kịch bản rủi ro cao mà không ảnh hưởng đến hệ thống thật.
+- **Chuẩn hóa log**: Nhu cầu chuẩn hóa log từ nhiều nguồn khác nhau về một định dạng chung (OpenTelemetry) để dễ dàng xử lý và phân tích.
 
-### Lợi Ích Tiềm Năng
-- **Giảm rủi ro**: Phát hiện sớm các mối đe dọa bảo mật và gian lận
-- **Tối ưu chi phí**: Tiết kiệm chi phí so với việc mua dữ liệu thực
-- **Nâng cao chất lượng**: Cải thiện độ chính xác của hệ thống monitoring
-- **Đào tạo hiệu quả**: Cung cấp môi trường thực hành cho đội ngũ SOC/DevOps
+### Lợi Ích
+- **Nâng cao độ chính xác của mô hình AI/ML**: Cung cấp dữ liệu "sạch" và "bất thường" có gán nhãn để huấn luyện các mô hình phát hiện gian lận, tấn công.
+- **Giảm thiểu rủi ro**: Phát hiện sớm các lỗ hổng và điểm yếu trong hệ thống giám sát và bảo mật.
+- **Tối ưu hóa hiệu năng**: Kiểm thử khả năng chịu tải và phản ứng của hệ thống trước các sự cố đột ngột (CPU spike, memory leak).
+- **Tăng tốc độ phát triển**: Rút ngắn thời gian phát triển và triển khai các tính năng liên quan đến bảo mật và giám sát.
 
-## Tính Năng Chính
+## 2. Kiến Trúc Hệ Thống
 
-### 1. Scenario Orchestrator (Port 8000)
-- **Quản lý 200+ kịch bản bất thường**: Bao gồm 20 kịch bản infrastructure chuyên sâu với metrics chi tiết
-- **Tạo log liên tục tự động**: Tỷ lệ anomaly thực tế 0.02% (1/5000 logs)
-- **Trigger thủ công**: Tạo sự cố CPU spike, memory leak, database slow, network latency
-- **Web UI trực quan**: Giao diện tiếng Việt thân thiện với dashboard monitoring real-time
-
-### 2. Pattern Generator (Port 8001)
-- **5 pattern toán học**: Gaussian spike, Step function, Sawtooth, Exponential decay, Poisson events
-- **Data generator thực tế**: Tạo tên, số điện thoại, IP, số tài khoản theo chuẩn Việt Nam
-- **Banking-specific data**: Mô phỏng transaction amounts, merchant names, bank codes chính xác
-
-### 3. Log Synthesis Engine (Port 8002)
-- **59 loại log toàn diện** được tổ chức trong 13 danh mục:
-  - Infrastructure & System (9 types)
-  - Application Layer (6 types)
-  - Database & Data Store (8 types)
-  - Security & Authentication (7 types)
-  - Business Transaction (5 types)
-  - Fraud Detection & AML (3 types)
-  - User Behavior & Analytics (6 types)
-  - Compliance & Audit (3 types)
-  - External Integration (3 types)
-  - Monitoring & Observability (3 types)
-  - Business Intelligence (2 types)
-  - Specialized Logs (2 types)
-  - Log Management (2 types)
-- **Auto-forwarding**: Tự động chuyển tiếp logs đến Ingestion Interface
-
-### 4. State Manager (Port 8003)
-- **Quản lý lifecycle entities**: User, Account, Session, System states
-- **State transitions**: Kiểm soát chuyển đổi trạng thái hợp lệ
-- **History tracking**: Lưu lịch sử thay đổi trạng thái chi tiết
-
-### 5. Ingestion Interface (Port 8004)
-- **Rate limiting**: Kiểm soát tốc độ ingestion (default 1000 logs/s)
-- **Multi-target support**: Kafka, HTTP, File System, Database
-- **Auto-categorization**: Tự động phân loại và lưu logs vào 13 thư mục category
-- **Anomaly detection**: Logs với anomaly_score > 70 được tách riêng vào thư mục anomaly
-
-### 6. Log Consolidation (Port 8005) - 🔄 **Tối ưu cho 2GB RAM**
-- **OpenTelemetry standardization**: Chuẩn hóa tất cả logs theo LogRecord format
-- **Dual storage mode**: File storage (mặc định) + RAM storage (tùy chọn)
-- **Memory optimization**: **RAM storage tắt mặc định** để tiết kiệm tài nguyên
-- **File persistence**: Logs chuẩn hóa lưu vĩnh viễn vào `/app/logs/consolidated/YYYYMMDD.jsonl`
-- **Severity mapping**: Tự động xác định severity dựa trên nội dung và anomaly score
-- **Aggregation analytics**: Thống kê timeline, source distribution, error patterns
-- **Trace correlation**: Hỗ trợ trace_id, span_id cho distributed tracing
-
-## Các Kết Nối, Kiến Trúc và Dependency
-
-### Kiến Trúc Hệ Thống
+Hệ thống bao gồm 6 microservices chính, giao tiếp với nhau qua mạng nội bộ của Docker.
 
 ```mermaid
-graph TB
-    subgraph "User Interface"
-        UI[Web Browser]
+graph TD
+    subgraph "Giao Diện Người Dùng"
+        UI[🌐 Web Browser]
     end
-    
-    subgraph "Core Services"
-        SO[Scenario Orchestrator<br/>:8000]
-        PG[Pattern Generator<br/>:8001]
-        LS[Log Synthesis<br/>:8002]
-        SM[State Manager<br/>:8003]
-        II[Ingestion Interface<br/>:8004]
-        LC[Log Consolidation<br/>:8005]
+
+    subgraph "Các Microservices Chính"
+        SO[<b>Scenario Orchestrator</b><br/>(Port 8000)<br/>Điều phối kịch bản]
+        PG[<b>Pattern Generator</b><br/>(Port 8001)<br/>Tạo mẫu dữ liệu]
+        LS[<b>Log Synthesis</b><br/>(Port 8002)<br/>Tổng hợp log chi tiết]
+        SM[<b>State Manager</b><br/>(Port 8003)<br/>Quản lý trạng thái]
+        II[<b>Ingestion Interface</b><br/>(Port 8004)<br/>Tiếp nhận và lưu trữ log thô]
+        LC[<b>Log Consolidation</b><br/>(Port 8005)<br/>Chuẩn hóa và phân tích log]
     end
-    
-    subgraph "Data Flow"
-        SO -->|Generate Patterns| PG
-        SO -->|Request Logs| LS
-        SO -->|Update States| SM
-        LS -->|Forward Logs| II
-        II -->|Consolidate| LC
-        II -->|Write Files| FS[(File System<br/>/app/logs)]
+
+    subgraph "Luồng Dữ Liệu & Lưu Trữ"
+        FS_RAW[(🗂️ File System: Raw Logs<br/>/app/logs/categories)]
+        FS_CONSOLIDATED[(📂 File System: Consolidated Logs<br/>/app/logs/consolidated)]
     end
-    
-    UI -->|HTTP| SO
-    UI -->|Monitor| LC
+
+    UI -->|HTTP Request| SO
+    UI -->|Xem & Phân tích| LC
+
+    SO -->|Yêu cầu Pattern| PG
+    SO -->|Yêu cầu Log| LS
+    SO -->|Cập nhật Trạng thái| SM
+
+    LS -->|Gửi Log Thô| II
+
+    II -->|Lưu Log Thô| FS_RAW
+    II -->|Forward để chuẩn hóa| LC
+
+    LC -->|Lưu Log Chuẩn Hóa| FS_CONSOLIDATED
 ```
 
-### Dependencies
-- **Python 3.11**: Runtime chính cho tất cả services
-- **FastAPI 0.104.1**: Framework web async hiệu năng cao
-- **Uvicorn 0.24.0**: ASGI server cho FastAPI
-- **Pydantic 2.5.0**: Data validation và serialization
-- **httpx 0.25.2**: Async HTTP client cho inter-service communication
-- **Docker & Docker Compose**: Container orchestration
+### Luồng Dữ Liệu Chi Tiết
+1.  **Scenario Orchestrator** là bộ não của hệ thống, điều phối các kịch bản. Khi một kịch bản được kích hoạt (tự động hoặc thủ công), nó sẽ:
+    *   Yêu cầu **Pattern Generator** tạo ra các chuỗi dữ liệu toán học (ví dụ: hình sin, bước nhảy).
+    *   Gửi yêu cầu đến **Log Synthesis** để tạo ra các bản ghi log chi tiết dựa trên các mẫu dữ liệu và loại log cụ thể.
+2.  **Log Synthesis** tạo ra 59 loại log khác nhau và chuyển tiếp chúng đến **Ingestion Interface**.
+3.  **Ingestion Interface** thực hiện hai nhiệm vụ song song:
+    *   **Luồng 1 (Lưu trữ log thô)**: Phân loại và lưu các log thô (raw logs) dưới dạng file JSON lines vào các thư mục tương ứng (`/app/logs/<category>/`). Các log có điểm bất thường cao sẽ được lưu riêng vào thư mục `anomaly`.
+    *   **Luồng 2 (Chuẩn hóa)**: Chuyển tiếp ngay lập tức các log thô đến **Log Consolidation** để xử lý.
+4.  **Log Consolidation** nhận log thô, chuẩn hóa chúng theo định dạng **OpenTelemetry LogRecord**, và lưu trữ chúng vào một file duy nhất cho mỗi ngày (`/app/logs/consolidated/consolidated_logs_YYYYMMDD.jsonl`). Dịch vụ này cũng cung cấp API để truy vấn và phân tích các log đã được chuẩn hóa.
 
-### Network Architecture
-- **Bridge Network**: `anomaly-network` kết nối tất cả services
-- **Health Checks**: Mỗi service có endpoint `/health` với monitoring tự động
-- **Service Discovery**: Services giao tiếp qua container names (DNS internal)
+## 3. Tính Năng Chính của Từng Service
 
-## Hướng Dẫn Cài Đặt và Triển Khai
+### 1. Scenario Orchestrator (`:8000`)
+-   **Điều phối trung tâm**: Quản lý và kích hoạt hơn 200 kịch bản bất thường (90 Technical, 90 Business, 20 Security).
+-   **Tạo log liên tục**: Tự động chạy nền để sinh log bình thường và chèn các bất thường ngẫu nhiên với tần suất thực tế (mặc định 1 bất thường/5000 log).
+-   **Kích hoạt thủ công**: Giao diện web cho phép người dùng tạo ngay các sự cố phổ biến như CPU Spike, Memory Leak, Database Slow, Network Latency, và các tấn công bảo mật.
+-   **Giao diện web trực quan (Tiếng Việt)**: Cung cấp dashboard để theo dõi trạng thái hệ thống, số lượng log, và lịch sử các sự cố đã tạo.
+
+### 2. Pattern Generator (`:8001`)
+-   **Mô hình toán học**: Tạo ra các chuỗi dữ liệu theo các mẫu toán học (Gaussian, Step, Sawtooth, Exponential, Poisson) để mô phỏng các xu hướng tăng/giảm của metrics.
+-   **Dữ liệu thực tế Việt Nam**: Sinh dữ liệu giả lập tuân thủ các quy tắc của Việt Nam (tên, số điện thoại, địa chỉ IP, số tài khoản ngân hàng).
+
+### 3. Log Synthesis Engine (`:8002`)
+-   **Thư viện 59 loại log**: Cung cấp một bộ sưu tập log cực kỳ phong phú, được chia thành 13 danh mục nghiệp vụ, từ log hạ tầng, ứng dụng, bảo mật đến log giao dịch, gian lận, và tuân thủ.
+-   **Tự động chuyển tiếp**: Gửi các log đã được tổng hợp đến `Ingestion Interface` để xử lý tiếp.
+
+### 4. State Manager (`:8003`)
+-   **Quản lý trạng thái**: Theo dõi trạng thái của các thực thể trong hệ thống (User, Account, Session, System).
+-   **Kiểm soát chuyển đổi**: Đảm bảo các thay đổi trạng thái (ví dụ: `active` -> `suspended`) tuân thủ các quy tắc nghiệp vụ đã định.
+
+### 5. Ingestion Interface (`:8004`)
+-   **Điểm tiếp nhận log**: Là cổng vào duy nhất cho tất cả các log được sinh ra.
+-   **Rate Limiting**: Giới hạn tốc độ ghi log để tránh quá tải hệ thống (mặc định 1000 logs/giây).
+-   **Lưu trữ log thô**: Tự động phân loại và lưu log thô vào 13 thư mục khác nhau dựa trên `log_type`.
+-   **Tách biệt log bất thường**: Các log có `anomaly_score > 70` được tự động lưu vào thư mục `anomaly/` để dễ dàng phân tích.
+
+### 6. Log Consolidation (`:8005`)
+-   **Chuẩn hóa OpenTelemetry**: Chuyển đổi tất cả các định dạng log khác nhau về một cấu trúc **LogRecord** duy nhất, giúp việc truy vấn và phân tích trở nên đồng nhất.
+-   **Tối ưu cho RAM thấp (2GB)**:
+    *   **File Storage (Mặc định)**: Các log đã chuẩn hóa được ghi thẳng vào file (`/app/logs/consolidated/`), giảm thiểu việc sử dụng RAM.
+    *   **RAM Storage (Tùy chọn)**: Có thể bật để phân tích real-time, nhưng yêu cầu nhiều bộ nhớ hơn.
+-   **API Phân tích & Thống kê**: Cung cấp các endpoints để lấy thống kê tổng hợp, phân phối theo mức độ nghiêm trọng, và phân tích theo dòng thời gian.
+
+## 4. Hướng Dẫn Cài Đặt và Triển Khai
 
 ### Yêu Cầu Hệ Thống
-- **Docker**: Version 20.10 trở lên
-- **Docker Compose**: Version 2.0 trở lên
-- **RAM**: **Tối thiểu 2GB** (nhờ mode file storage mới) - (khuyến nghị 4GB để bật RAM storage)
-- **Disk**: 10GB trống cho logs và Docker images
-- **CPU**: 2 cores trở lên
+-   **Docker & Docker Compose**: Phiên bản mới nhất.
+-   **Hệ điều hành**: Linux, MacOS, hoặc Windows (với WSL2).
+-   **RAM**: Tối thiểu **2GB** (với cấu hình mặc định). Khuyến nghị 4GB+ nếu muốn bật RAM storage.
+-   **Disk**: Ít nhất 10GB dung lượng trống.
 
-### Cài Đặt Từng Bước
+### Các Bước Cài Đặt
+1.  **Clone repository**:
+    ```bash
+    git clone <repository-url>
+    cd <repository-name>/stages/00-mock-servers
+    ```
 
-1. **Clone repository**:
-```bash
-git clone <repository-url>
-cd 00-mock-servers
-```
+2.  **Cấp quyền thực thi cho scripts**:
+    ```bash
+    chmod +x start.sh stop.sh
+    ```
 
-2. **Cấp quyền cho scripts**:
-```bash
-chmod +x start.sh stop.sh
-```
+3.  **Khởi động hệ thống**:
+    Lệnh này sẽ build các Docker image và khởi chạy tất cả 6 services ở chế độ nền.
+    ```bash
+    ./start.sh
+    ```
 
-3. **Khởi động hệ thống**:
-```bash
-./start.sh
-```
+4.  **Kiểm tra trạng thái**:
+    Sau khoảng 1-2 phút, kiểm tra xem tất cả các services có ở trạng thái `healthy` không.
+    ```bash
+    docker-compose ps
+    ```
+    Bạn cũng có thể xem log real-time của tất cả các services:
+    ```bash
+    docker-compose logs -f
+    ```
 
-4. **Kiểm tra trạng thái**:
-```bash
-docker-compose ps
-docker-compose logs -f
-```
+5.  **Dừng hệ thống**:
+    ```bash
+    ./stop.sh
+    ```
 
-### Triển Khai Production
-
-1. **Cấu hình environment variables**:
+### Cấu hình cho môi trường RAM thấp (2GB)
+Hệ thống đã được tối ưu sẵn cho các máy có RAM thấp. Dịch vụ `log-consolidation` mặc định sử dụng chế độ ghi file để tiết kiệm bộ nhớ. Cấu hình này nằm trong file `docker-compose.yml`:
 ```yaml
-# docker-compose.override.yml
-services:
-  scenario-orchestrator:
-    environment:
-      - LOG_LEVEL=WARNING
-      - MAX_SCENARIOS=500
-```
-
-2. **Tăng resource limits**:
-```yaml
-services:
-  log-synthesis:
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 1G
-```
-
-3. **Persistent volumes**:
-```yaml
-volumes:
-  log-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /data/logs
-```
-
-### Xử Lý Lỗi Tiềm Năng
-
-- **Docker not running**: Khởi động Docker Desktop/Engine
-- **Port conflicts**: Kiểm tra ports 8000-8005 chưa được sử dụng
-- **Memory issues (2GB systems)**: 
-  - ✅ Sử dụng file storage mode (mặc định)
-  - ⚠️ Tắt RAM storage trong log-consolidation
-  - 📝 Giảm container memory limits xuống 512M-1G
-- **Network errors**: Đảm bảo không có firewall blocking
-
-### 💡 Tips cho 2GB RAM Systems
-
-```bash
-# Kiểm tra memory usage
-docker stats --no-stream
-
-# Cấu hình cho 2GB RAM
-cat > docker-compose.override.yml << EOF
+# stages/00-mock-servers/docker-compose.yml
 services:
   log-consolidation:
     environment:
-      - ENABLE_RAM_STORAGE=false
-      - ENABLE_FILE_STORAGE=true
-      - MAX_RAM_LOGS=1000
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-EOF
+      - ENABLE_RAM_STORAGE=false    # Mặc định: TẮT
+      - ENABLE_FILE_STORAGE=true   # Mặc định: BẬT
+      - MAX_RAM_LOGS=1000          # Giới hạn số log trong RAM nếu được bật
+```
+Bạn không cần thay đổi gì nếu muốn chạy trên máy 2GB RAM.
+
+## 5. Hướng Dẫn Sử Dụng
+
+### Truy Cập Giao Diện Web
+-   **Scenario Orchestrator**: `http://localhost:8000` - Giao diện chính để điều khiển và giám sát.
+-   **Log Consolidation**: `http://localhost:8005` - Giao diện để xem, lọc, và phân tích các log đã được chuẩn hóa.
+
+### Kích Hoạt Sự Cố Thủ Công
+Truy cập `http://localhost:8000`, tìm đến mục "Tạo Sự Cố Bất Thường" và nhấn vào các nút như "🔥 CPU Spike" hoặc "💾 Memory Leak".
+
+Hoặc sử dụng API:
+```bash
+curl -X POST "http://localhost:8000/api/anomaly/trigger" \
+-H "Content-Type: application/json" \
+-d '{
+    "anomaly_type": "database_slow",
+    "intensity": 80,
+    "duration_seconds": 90
+}'
 ```
 
-## Hướng Dẫn Sử Dụng
+### Xem và Truy Vấn Log
 
-### 1. Tạo Sự Cố Bất Thường Thủ Công
+#### Log Thô (Raw Logs)
+Log thô được lưu trực tiếp trên máy host của bạn trong thư mục `stages/00-mock-servers/logs/`. Bạn có thể dùng các công cụ dòng lệnh để phân tích:
+```bash
+# Tìm kiếm các log xác thực thất bại
+grep -r "authentication_failure" stages/00-mock-servers/logs/security/
 
-Truy cập http://localhost:8000 và sử dụng giao diện web:
+# Đếm số log bất thường về gian lận
+jq . stages/00-mock-servers/logs/anomaly/fraud_detection_log_*.log | wc -l
+```
 
-```javascript
-// Ví dụ API call
-POST http://localhost:8000/api/anomaly/trigger
+#### Log Chuẩn Hóa (Consolidated Logs)
+Sử dụng API của dịch vụ `log-consolidation` để truy vấn:
+```bash
+# Lấy 100 log chuẩn hóa gần nhất
+curl "http://localhost:8005/api/consolidated-logs?limit=100" | jq
+
+# Lấy thống kê tổng hợp
+curl "http://localhost:8005/api/aggregation/stats" | jq
+
+# Lấy dữ liệu timeline cho 60 phút vừa qua
+curl "http://localhost:8005/api/aggregation/timeline?minutes=60" | jq
+```
+Hoặc truy cập trực tiếp file log đã chuẩn hóa:
+```bash
+# Đọc file log chuẩn hóa của ngày hôm nay
+jq . stages/00-mock-servers/logs/consolidated/consolidated_logs_*.jsonl
+```
+
+## 6. Chi Tiết Về Lưu Trữ Log
+
+Hệ thống có **2 luồng lưu trữ log song song** để phục vụ các mục đích khác nhau:
+
+| Đặc điểm | Luồng 1: Log Thô (Raw Logs) | Luồng 2: Log Chuẩn Hóa (Consolidated) |
+| :--- | :--- | :--- |
+| **Dịch vụ** | `ingestion-interface` | `log-consolidation` |
+| **Vị trí** | `logs/<category>/<log_type>_YYYYMMDD.log` | `logs/consolidated/consolidated_logs_YYYYMMDD.jsonl` |
+| **Định dạng** | JSON Lines đơn giản, mỗi nguồn một kiểu | **OpenTelemetry LogRecord** (JSON Lines) |
+| **Cấu trúc** | Flat, không đồng nhất | Rich, nested, đồng nhất |
+| **Tối ưu RAM** | ✅ Rất thấp | ✅ Thấp (chế độ file mặc định) |
+| **Mục đích** | Lưu trữ gốc, audit, backup | Phân tích, truy vấn, tích hợp SIEM |
+
+**Ví dụ log thô (`application_log`):**
+```json
+{"timestamp": "...", "level": "ERROR", "service": "payment-service", "message": "Payment failed", "anomaly_score": 85.0}
+```
+
+**Ví dụ log đã chuẩn hóa (cùng log trên):**
+```json
 {
-    "anomaly_type": "cpu_spike",
-    "intensity": 90,
-    "duration_seconds": 60
+  "timestamp": "...",
+  "body": "[ERROR] payment-service: Payment failed",
+  "severity_text": "ERROR",
+  "severity_number": 17,
+  "attributes": {
+    "source": "log-synthesis",
+    "original_log_type": "application_log",
+    "log.category": "application",
+    "level": "ERROR",
+    "service": "payment-service",
+    "anomaly_score": 85.0
+  },
+  "resource": {
+    "attributes": { "service.name": "log-synthesis-service", ... }
+  }
 }
 ```
 
-### 2. Monitoring Real-time
-
-```bash
-# Xem logs của một service cụ thể
-docker-compose logs -f scenario-orchestrator
-
-# Xem metrics tổng hợp
-curl http://localhost:8005/api/aggregation/stats
-```
-
-### 3. Query Consolidated Logs
-
-```python
-import requests
-
-# Lấy logs đã chuẩn hóa
-response = requests.get("http://localhost:8005/api/consolidated-logs")
-logs = response.json()["logs"]
-
-# Lọc logs có anomaly cao
-high_anomaly_logs = [
-    log for log in logs 
-    if float(log["attributes"].get("anomaly_score", 0)) > 70
-]
-```
-
-### 4. Tùy Chỉnh Log Generation
-
-```python
-# Tạo custom log type
-POST http://localhost:8002/api/synthesize
-{
-    "log_type": "payment_transaction_log",
-    "scenario_id": "FRAUD_001",
-    "count": 100,
-    "anomaly_score": 85.5
-}
-```
-
-### 5. Export và Analysis
-
-```bash
-# Export logs to JSON
-curl http://localhost:8005/api/consolidated-logs > logs.json
-
-# Xem thống kê theo timeline
-curl "http://localhost:8005/api/aggregation/timeline?minutes=60"
-```
-
-## Các Phần Bổ Sung
-
-### Troubleshooting
-
-**Vấn đề: Services không healthy**
-- Giải pháp: Kiểm tra logs với `docker-compose logs [service-name]`
-- Restart service: `docker-compose restart [service-name]`
-
-**Vấn đề: Logs không được forward**
-- Kiểm tra network connectivity: `docker exec -it scenario-orchestrator ping log-synthesis`
-- Verify endpoints: `curl http://localhost:8002/health`
-
-### Contributing Guidelines
-
-1. Fork repository
-2. Tạo feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open Pull Request
-
-### Performance Considerations
-
-- **Log rotation**: Implement log rotation cho /app/logs directory
-- **Memory management**: Monitor container memory với `docker stats`
-- **Rate limiting**: Điều chỉnh rate limits dựa trên system capacity
-- **Batch processing**: Tối ưu batch_size cho throughput tốt nhất
-- **2GB RAM Optimization**:
-  - ✅ Sử dụng file storage mode cho log consolidation
-  - ⚠️ Tắt RAM storage để tiết kiệm tài nguyên
-  - 📝 Monitor memory usage với `docker logs log-consolidation`
-
-### Security Notes
-
-- **Network isolation**: Services chỉ expose ports cần thiết
-- **Input validation**: Pydantic models validate tất cả inputs
-- **Rate limiting**: Bảo vệ khỏi DoS attacks
-- **Log sanitization**: Sensitive data được mask trong logs
-
-### Roadmap
-
-- [ ] Kafka integration cho real-time streaming
-- [ ] Elasticsearch output connector
-- [ ] Machine Learning anomaly scoring
-- [ ] Grafana dashboard templates
-- [ ] Kubernetes deployment manifests
-- [x] **✅ File storage optimization cho 2GB RAM systems**
-- [ ] Log rotation và compression
-- [ ] Prometheus metrics integration
-
+## 7. Roadmap Phát Triển
+- [x] **Tối ưu hóa cho hệ thống 2GB RAM bằng File Storage Mode.**
+- [ ] Tích hợp Kafka làm target cho `ingestion-interface`.
+- [ ] Bổ sung output connector tới Elasticsearch/Splunk từ `log-consolidation`.
+- [ ] Xây dựng các mẫu dashboard Grafana để trực quan hóa metrics.
+- [ ] Cung cấp manifest để triển khai trên Kubernetes (K8s).
+- [ ] Triển khai cơ chế log rotation và compression tự động.

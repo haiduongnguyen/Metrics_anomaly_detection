@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # Spark Worker - Executes PySpark jobs
+  etl-spark-worker:
+    build: ./spark-jobs
+    container_name: etl-spark-worker
+    environment:
+      - SPARK_MASTER=local[*]
+      - SPARK_DRIVER_MEMORY=2g
+      - SPARK_EXECUTOR_MEMORY=2g
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    volumes:
+      - ./spark-jobs:/app/spark-jobs
+      - ./state:/app/state
+
+  # ETL Scheduler - Scans S3 and triggers jobs
+  etl-scheduler:
+    build: ./etl-scheduler
+    container_name: etl-scheduler
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+      - RAW_BUCKET=md-raw-logs
+      - TRANSFORMED_LOGS_BUCKET=md-transformed-logs
+      - TRANSFORMED_METRICS_BUCKET=md-transformed-metrics
+      - SCAN_INTERVAL=300
+      - STATE_FILE=/app/state/processing_state.json
+      - SPARK_SCRIPT_PATH=/app/spark-jobs
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    volumes:
+      - ./state:/app/state
+      - ./spark-jobs:/app/spark-jobs
+    depends_on:
+      - etl-spark-worker
+
+  # Quality Monitor - Tracks data quality metrics
+  etl-quality-monitor:
+    build: ./quality-monitor
+    container_name: etl-quality-monitor
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+      - RAW_BUCKET=md-raw-logs
+      - TRANSFORMED_LOGS_BUCKET=md-transformed-logs
+      - METRICS_FILE=/app/state/quality_metrics.json
+      - CHECK_INTERVAL=300
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    volumes:
+      - ./state:/app/state
+
+  # Stage 02 Dashboard
+  stage02-dashboard:
+    build: ./dashboard
+    container_name: stage02-dashboard
+    ports:
+      - "8020:8020"
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8020/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    volumes:
+      - ./state:/app/state
+
+networks:
+  anomaly-network:
+    external: true

@@ -1,0 +1,58 @@
+version: '3.8'
+
+# Use this file if you want to run a dedicated LocalStack for stage 01
+# Usage: docker compose -f docker-compose.standalone.yml up -d
+
+services:
+  localstack:
+    image: localstack/localstack:3.0
+    container_name: localstack-stage01
+    ports:
+      - "4566:4566"            # LocalStack main endpoint
+      - "4510-4559:4510-4559"  # External services port range
+    environment:
+      # Core configuration
+      - SERVICES=s3,kinesis,lambda,iam,cloudwatch,sts,logs
+      - DEBUG=1
+      - PERSISTENCE=1
+      - LAMBDA_EXECUTOR=docker-reuse
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      
+      # AWS configuration for compatibility
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      
+      # Performance optimization for 2GB RAM systems
+      - LOCALSTACK_VOLUME_DIR=/var/lib/localstack
+      - DATA_DIR=/tmp/localstack/data
+      
+      # Logging
+      - LOG_LEVEL=INFO
+      
+    volumes:
+      # Mount Docker socket for Lambda executor
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Persistent data storage
+      - localstack-data:/tmp/localstack
+      - ./localstack-init:/etc/localstack/init/ready.d
+      
+    networks:
+      - anomaly-network
+      
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+networks:
+  anomaly-network:
+    external: true  # Use existing network from stage 00
+
+volumes:
+  localstack-data:
+    driver: local

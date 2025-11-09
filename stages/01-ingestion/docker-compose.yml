@@ -1,0 +1,19 @@
+version: '3.8'
+
+# NOTE: This docker-compose is configured to use an existing LocalStack instance
+# If you want to run a dedicated LocalStack for stage 01, use docker-compose.standalone.yml
+
+services:
+  # Placeholder service to manage network connectivity
+  # The actual LocalStack (anomaly-localstack) should be running externally
+  stage01-helper:
+    image: busybox:latest
+    container_name: stage01-helper
+    command: sh -c "echo 'Stage 01 helper container - LocalStack should be running externally on port 4566' && tail -f /dev/null"
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+
+networks:
+  anomaly-network:
+    external: true  # Use existing network from stage 00

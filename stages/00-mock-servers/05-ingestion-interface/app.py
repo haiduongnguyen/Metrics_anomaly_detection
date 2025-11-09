@@ -15,6 +15,14 @@ import os
 from pathlib import Path
 import httpx
 
+# Import Kinesis producer
+try:
+    from kinesis_producer import KinesisProducer
+    kinesis_producer = KinesisProducer()
+except ImportError:
+    kinesis_producer = None
+    print("[Warning] Kinesis producer not available")
+
 app = FastAPI(title="Ingestion Interface Service", version="1.0.0")
 
 app.add_middleware(
@@ -393,6 +401,14 @@ async def process_queue_batch(count: int):
         # Forward logs to consolidation service
         if processed_logs:
             await forward_to_consolidation(processed_logs)
+        
+        # Send logs to Kinesis (Stage 01 integration)
+        if processed_logs and kinesis_producer:
+            logs_data = [item.get("log") for item in processed_logs if item.get("log")]
+            if logs_data:
+                result = kinesis_producer.send_logs(logs_data)
+                if result.get("success", 0) > 0:
+                    print(f"[Kinesis] Sent {result['success']} logs to Kinesis stream")
         
         if auto_ingestion_state["total_ingested"] % 1000 == 0:
             print(f"[v0] Ingested {auto_ingestion_state['total_ingested']} logs, written {written} to files")

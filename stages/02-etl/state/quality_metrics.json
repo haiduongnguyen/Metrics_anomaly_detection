@@ -1,0 +1,29 @@
+{
+  "last_check": "2025-11-09T10:36:19.446977",
+  "raw_objects": 325,
+  "transformed_objects": 3,
+  "raw_size_bytes": 19039232,
+  "transformed_size_bytes": 3,
+  "compression_ratio": 6346410.67,
+  "quality_score": 30.65,
+  "checks": [
+    {
+      "timestamp": "2025-11-09T10:26:19.370158",
+      "raw_objects": 0,
+      "transformed_objects": 0,
+      "quality_score": 0.0
+    },
+    {
+      "timestamp": "2025-11-09T10:31:19.406495",
+      "raw_objects": 224,
+      "transformed_objects": 3,
+      "quality_score": 30.94
+    },
+    {
+      "timestamp": "2025-11-09T10:36:19.446977",
+      "raw_objects": 325,
+      "transformed_objects": 3,
+      "quality_score": 30.65
+    }
+  ]
+}

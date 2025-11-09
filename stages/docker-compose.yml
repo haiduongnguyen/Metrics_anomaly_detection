@@ -1,0 +1,418 @@
+services:
+  # ===================================
+  # LocalStack - AWS Services Emulator
+  # ===================================
+  localstack:
+    image: localstack/localstack:3.0
+    container_name: localstack-anomaly
+    ports:
+      - "4566:4566"
+      - "4510-4559:4510-4559"
+    environment:
+      - SERVICES=s3,kinesis,lambda,iam,cloudwatch,sts,logs
+      - DEBUG=0
+      - PERSISTENCE=0
+      - LAMBDA_EXECUTOR=local
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - LOG_LEVEL=INFO
+      - SKIP_SSL_CERT_DOWNLOAD=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./01-ingestion/localstack-init:/etc/localstack/init/ready.d
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ===================================
+  # Stage 00 - Mock Servers
+  # ===================================
+  
+  scenario-orchestrator:
+    build: ./00-mock-servers/01-scenario-orchestrator
+    container_name: scenario-orchestrator
+    ports:
+      - "8000:8000"
+    environment:
+      - PATTERN_GENERATOR_URL=http://pattern-generator:8001
+      - STATE_MANAGER_URL=http://state-manager:8003
+      - LOG_SYNTHESIS_URL=http://log-synthesis:8002
+      - INGESTION_URL=http://ingestion-interface:8004
+      - LOG_LEVEL=INFO
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      pattern-generator:
+        condition: service_healthy
+      state-manager:
+        condition: service_healthy
+
+  pattern-generator:
+    build: ./00-mock-servers/02-pattern-generator
+    container_name: pattern-generator
+    ports:
+      - "8001:8001"
+    environment:
+      - LOG_LEVEL=INFO
+      - MAX_PATTERNS_PER_REQUEST=1000
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  log-synthesis:
+    build: ./00-mock-servers/03-log-synthesis
+    container_name: log-synthesis
+    ports:
+      - "8002:8002"
+    environment:
+      - LOG_LEVEL=INFO
+      - MAX_LOGS_PER_REQUEST=10000
+      - INGESTION_URL=http://ingestion-interface:8004
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  state-manager:
+    build: ./00-mock-servers/04-state-manager
+    container_name: state-manager
+    ports:
+      - "8003:8003"
+    environment:
+      - LOG_LEVEL=INFO
+      - MAX_ENTITIES=100000
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  ingestion-interface:
+    build: ./00-mock-servers/05-ingestion-interface
+    container_name: ingestion-interface
+    ports:
+      - "8004:8004"
+    environment:
+      - LOG_LEVEL=INFO
+      - DEFAULT_RATE_LIMIT=1000
+      - MAX_BATCH_SIZE=1000
+      - CONSOLIDATION_URL=http://log-consolidation:8005
+      # Kinesis configuration
+      - KINESIS_ENABLED=true
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+      - KINESIS_STREAM_NAME=stage01-logs-stream
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      - ./00-mock-servers/logs:/app/logs
+    depends_on:
+      log-synthesis:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+
+  log-consolidation:
+    build: ./00-mock-servers/06-log-consolidation
+    container_name: log-consolidation
+    ports:
+      - "8005:8005"
+    environment:
+      - LOG_LEVEL=INFO
+      - MAX_CONSOLIDATED_LOGS=10000
+      - ENABLE_RAM_STORAGE=false
+      - ENABLE_FILE_STORAGE=true
+      - MAX_RAM_LOGS=1000
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      - ./00-mock-servers/logs:/app/logs
+    depends_on:
+      ingestion-interface:
+        condition: service_healthy
+
+  # ===================================
+  # Stage 01 - Ingestion Layer
+  # ===================================
+  
+  kinesis-consumer:
+    build: ./01-ingestion/kinesis-consumer
+    container_name: kinesis-consumer
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+      - STREAM_NAME=stage01-logs-stream
+      - TARGET_BUCKET=md-raw-logs
+      - POLL_INTERVAL=5
+      - BATCH_SIZE=100
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    depends_on:
+      localstack:
+        condition: service_healthy
+
+  # ===================================
+  # Stage 01 Dashboard
+  # ===================================
+  
+  stage01-dashboard:
+    build: ./01-ingestion/dashboard
+    container_name: stage01-dashboard
+    ports:
+      - "8010:8010"
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      localstack:
+        condition: service_healthy
+
+  # ===================================
+  # Stage 02 - ETL & Processing Layer
+  # ===================================
+  
+  etl-spark-worker:
+    build: ./02-etl/spark-jobs
+    container_name: etl-spark-worker
+    environment:
+      - SPARK_MASTER=local[*]
+      - SPARK_DRIVER_MEMORY=2g
+      - SPARK_EXECUTOR_MEMORY=2g
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    volumes:
+      - ./02-etl/spark-jobs:/app/spark-jobs
+      - ./02-etl/state:/app/state
+    depends_on:
+      localstack:
+        condition: service_healthy
+
+  etl-scheduler:
+    build: ./02-etl/etl-scheduler
+    container_name: etl-scheduler
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+      - RAW_BUCKET=md-raw-logs
+      - TRANSFORMED_LOGS_BUCKET=md-transformed-logs
+      - TRANSFORMED_METRICS_BUCKET=md-transformed-metrics
+      - SCAN_INTERVAL=300
+      - STATE_FILE=/app/state/processing_state.json
+      - SPARK_SCRIPT_PATH=/app/spark-jobs
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    volumes:
+      - ./02-etl/state:/app/state
+      - ./02-etl/spark-jobs:/app/spark-jobs
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      etl-spark-worker:
+        condition: service_started
+      kinesis-consumer:
+        condition: service_started
+
+  etl-quality-monitor:
+    build: ./02-etl/quality-monitor
+    container_name: etl-quality-monitor
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+      - RAW_BUCKET=md-raw-logs
+      - TRANSFORMED_LOGS_BUCKET=md-transformed-logs
+      - METRICS_FILE=/app/state/quality_metrics.json
+      - CHECK_INTERVAL=300
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    volumes:
+      - ./02-etl/state:/app/state
+    depends_on:
+      localstack:
+        condition: service_healthy
+
+  stage02-dashboard:
+    build: ./02-etl/dashboard
+    container_name: stage02-dashboard
+    ports:
+      - "8020:8020"
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8020/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    volumes:
+      - ./02-etl/state:/app/state
+    depends_on:
+      localstack:
+        condition: service_healthy
+
+  # ===================================
+  # Stage 03 - Storage Layer
+  # ===================================
+ 
+  redis-hot:
+    image: redis:7-alpine
+    container_name: redis-hot
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+ 
+  storage-router:
+    build: ./03-storage/storage-router
+    container_name: storage-router
+    ports:
+      - "8030:8030"
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+      - TRANSFORMED_LOGS_BUCKET=md-transformed-logs
+      - TRANSFORMED_METRICS_BUCKET=md-transformed-metrics
+      - WARM_BUCKET=md-warm-store
+      - COLD_BUCKET=md-cold-store
+      - REDIS_HOST=redis-hot
+      - ROUTE_INTERVAL=10
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8030/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      localstack:
+        condition: service_healthy
+      redis-hot:
+        condition: service_healthy
+ 
+  lifecycle-manager:
+    build: ./03-storage/lifecycle-manager
+    container_name: lifecycle-manager
+    ports:
+      - "8031:8031"
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+      - WARM_BUCKET=md-warm-store
+      - COLD_BUCKET=md-cold-store
+      - COLD_AFTER_DAYS=30
+      - ARCHIVE_AFTER_DAYS=365
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8031/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      localstack:
+        condition: service_healthy
+ 
+  stage03-dashboard:
+    build: ./03-storage/storage-dashboard
+    container_name: stage03-dashboard
+    ports:
+      - "8036:8036"
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+      - WARM_BUCKET=md-warm-store
+      - COLD_BUCKET=md-cold-store
+      - REDIS_HOST=redis-hot
+      - REFRESH_MS=2000
+    networks:
+      - anomaly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8036/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      storage-router:
+        condition: service_started
+      lifecycle-manager:
+        condition: service_started
+      redis-hot:
+        condition: service_healthy
+
+networks:
+  anomaly-network:
+    driver: bridge

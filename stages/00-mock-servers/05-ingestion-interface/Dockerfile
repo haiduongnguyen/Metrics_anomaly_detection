@@ -8,6 +8,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --default-timeout=100 -r requirements.txt
 
 COPY app.py .
+COPY kinesis_producer.py .
 
 EXPOSE 8004
 
