@@ -16,3 +16,12 @@ variable "project" {
 provider "aws" {
   region = var.region
 }
+
+
+variable "lambda_filter_zip" {
+  default = "../../02-etl/lambda_filter.zip"
+}
+
+variable "lambda_normalization_zip" {
+  default = "../../02-etl/lambda_normalization.zip" 
+}
