@@ -1,0 +1,68 @@
+services:
+  - payment-service
+  - auth-service
+  - user-service
+  - inventory-service
+
+log_levels:
+  INFO: 0.75
+  WARN: 0.20
+  ERROR: 0.05
+
+paths:
+  payment-service:
+    - /v1/pay
+    - /v1/pay/status
+    - /v1/pay/refund
+
+  auth-service:
+    - /v1/login
+    - /v1/logout
+    - /v1/refresh
+
+  user-service:
+    - /v1/user/info
+    - /v1/user/profile
+    - /v1/user/settings
+
+  inventory-service:
+    - /v1/product/search
+    - /v1/product/detail
+
+messages:
+  INFO:
+    - "Request processed successfully"
+    - "Cache hit"
+    - "User validated"
+    - "Operation completed"
+  WARN:
+    - "Slow response detected"
+    - "Retrying connection"
+    - "Missing optional field"
+  ERROR:
+    - "Database timeout"
+    - "External service failed"
+    - "Null pointer exception"
+    - "Invalid JWT token"
+
+status_code:
+  INFO:
+    - 200
+    - 201
+    - 204
+  WARN:
+    - 429
+    - 408
+  ERROR:
+    - 500
+    - 502
+    - 503
+
+latency:
+  normal_min: 20
+  normal_max: 200
+  anomaly_min: 300
+  anomaly_max: 1200
+
+anomaly:
+  ratio: 0.03

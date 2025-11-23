@@ -1,0 +1,24 @@
+{
+  "input_format": "auto",
+  
+  "severity_allow": ["INFO", "WARN", "ERROR"],
+  
+  "service_allow": ["auth-service", "payment-service", "inventory-service"],
+
+  "drop_if_missing_fields": ["timestamp", "service", "message"],
+
+  "timestamp_field": "timestamp",
+
+  "filter_rules": [
+    {
+      "field": "response_time_ms",
+      "operator": ">",
+      "value": 2000
+    },
+    {
+      "field": "status_code",
+      "operator": "!=",
+      "value": 200
+    }
+  ]
+}

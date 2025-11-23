@@ -1,0 +1,39 @@
+services:
+  - payment-service
+  - auth-service
+  - user-service
+  - inventory-service
+
+nodes:
+  - node-a
+  - node-b
+  - node-c
+
+metric_settings:
+  interval_seconds: 5
+  num_rows: 5000
+
+cpu:
+  normal_min: 20
+  normal_max: 70
+  anomaly_min: 80
+  anomaly_max: 100
+
+memory:
+  normal_min: 30
+  normal_max: 75
+  anomaly_min: 85
+  anomaly_max: 100
+
+latency:
+  normal_min: 20
+  normal_max: 200
+  anomaly_min: 300
+  anomaly_max: 900
+
+throughput:
+  normal_min: 50
+  normal_max: 200
+
+anomaly:
+  ratio: 0.05
