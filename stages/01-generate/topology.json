@@ -1,0 +1,6 @@
+{
+  "payment-service": ["auth-service", "inventory-service"],
+  "auth-service": ["user-service"],
+  "user-service": [],
+  "inventory-service": ["user-service"]
+}

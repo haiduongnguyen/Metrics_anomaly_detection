@@ -1,7 +1,15 @@
-# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized / DLL files*
+*/venv_*
 __pycache__/
 *.py[cod]
 *$py.class
+*/venv_*/
+venv_vpbank/
+/venv_vpbank/*
+**/venv_vpbank
+venv_wsl/
+**/python/*
+*.zip
 
 # C extensions
 *.so
